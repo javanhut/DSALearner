@@ -20,7 +20,29 @@ SHELL := /usr/bin/env bash
 .DEFAULT_GOAL := help
 
 # ------------ Config ------------
-COMPOSE ?= podman compose
+###############################################################################
+# Compose provider detection
+# Prefer: podman-compose (python) > podman compose (plugin) > docker compose
+###############################################################################
+
+# shell-detected compose command
+COMPOSE_AUTO := $(shell \
+  if command -v podman-compose >/dev/null 2>&1; then \
+    echo podman-compose; \
+  elif command -v podman >/dev/null 2>&1 && podman help 2>/dev/null | grep -q "compose"; then \
+    echo "podman compose"; \
+  elif command -v docker >/dev/null 2>&1 && docker compose version >/dev/null 2>&1; then \
+    echo "docker compose"; \
+  else \
+    echo ""; \
+  fi)
+
+ifeq ($(COMPOSE_AUTO),)
+$(warning No compose provider found. Install one of: podman-compose, podman compose plugin, or docker compose.)
+COMPOSE := podman compose
+else
+COMPOSE := $(COMPOSE_AUTO)
+endif
 COMPOSE_FILE ?= podman-compose.yml
 
 PROJECT ?= dsa

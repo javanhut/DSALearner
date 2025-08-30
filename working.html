@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>DSA Learner - Working</title>
+    <style>
+        * { box-sizing: border-box; }
+        body { 
+            margin: 0; 
+            font-family: Arial, sans-serif; 
+            background: #0b0f14; 
+            color: #e6edf3; 
+        }
+        .header { 
+            background: #121823; 
+            padding: 15px; 
+            border-bottom: 1px solid #202736; 
+        }
+        .container { 
+            display: flex; 
+            min-height: calc(100vh - 60px); 
+        }
+        .sidebar { 
+            width: 300px; 
+            background: #0f141b; 
+            padding: 20px; 
+            border-right: 1px solid #202736; 
+        }
+        .main { 
+            flex: 1; 
+            padding: 20px; 
+        }
+        .topic { 
+            background: #121823; 
+            border: 1px solid #202736; 
+            border-radius: 8px; 
+            padding: 15px; 
+            margin-bottom: 15px; 
+            cursor: pointer; 
+            transition: all 0.2s; 
+        }
+        .topic:hover { 
+            border-color: #62a0ff; 
+            transform: translateY(-1px); 
+        }
+        .item { 
+            background: #121823; 
+            border: 1px solid #202736; 
+            border-radius: 6px; 
+            padding: 12px; 
+            margin-bottom: 10px; 
+            cursor: pointer; 
+        }
+        .item:hover { 
+            border-color: #22d3ee; 
+        }
+        .difficulty { 
+            display: inline-block; 
+            padding: 2px 8px; 
+            border-radius: 3px; 
+            font-size: 11px; 
+            font-weight: bold; 
+        }
+        .easy { background: #33d17a; color: #000; }
+        .medium { background: #f9c74f; color: #000; }
+        .hard { background: #ff6b6b; color: #fff; }
+        .completed { 
+            opacity: 0.7; 
+            border-left: 4px solid #33d17a; 
+        }
+        .progress-bar { 
+            background: #202736; 
+            height: 6px; 
+            border-radius: 3px; 
+            overflow: hidden; 
+            margin: 8px 0; 
+        }
+        .progress-fill { 
+            background: #62a0ff; 
+            height: 100%; 
+            transition: width 0.3s; 
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1 style="margin: 0; font-size: 24px;">🎯 DSA Learner</h1>
+    </div>
+    
+    <div class="container">
+        <div class="sidebar" id="sidebar">
+            <h2 style="margin-top: 0;">📚 Topics</h2>
+            <div id="topics-list">Loading topics...</div>
+        </div>
+        
+        <div class="main" id="main">
+            <h2 style="margin-top: 0;">📖 Select a Topic</h2>
+            <p>Choose a topic from the sidebar to start learning!</p>
+        </div>
+    </div>
+
+    <script>
+        // Sample data - inline to avoid any loading issues
+        const data = {
+            topics: [
+                {
+                    id: 'arrays',
+                    title: 'Arrays & Two Pointers',
+                    description: 'Master array manipulation and two-pointer techniques for efficient problem solving.',
+                    items: [
+                        { id: 'two-sum', title: 'Two Sum', difficulty: 'easy', description: 'Find two numbers that add up to a target' },
+                        { id: 'three-sum', title: 'Three Sum', difficulty: 'medium', description: 'Find all unique triplets that sum to zero' },
+                        { id: 'container-water', title: 'Container With Most Water', difficulty: 'medium', description: 'Find container with maximum water capacity' }
+                    ]
+                },
+                {
+                    id: 'sorting',
+                    title: 'Sorting & Binary Search',
+                    description: 'Learn fundamental sorting algorithms and binary search techniques.',
+                    items: [
+                        { id: 'binary-search', title: 'Binary Search', difficulty: 'easy', description: 'Search efficiently in sorted arrays' },
+                        { id: 'merge-sort', title: 'Merge Sort', difficulty: 'medium', description: 'Divide and conquer sorting' },
+                        { id: 'quick-sort', title: 'Quick Sort', difficulty: 'medium', description: 'In-place partitioning sort' }
+                    ]
+                },
+                {
+                    id: 'dp',
+                    title: 'Dynamic Programming',
+                    description: 'Break complex problems into simpler subproblems using memoization.',
+                    items: [
+                        { id: 'fibonacci', title: 'Fibonacci Numbers', difficulty: 'easy', description: 'Classic DP introduction problem' },
+                        { id: 'coin-change', title: 'Coin Change', difficulty: 'medium', description: 'Minimum coins for target amount' },
+                        { id: 'longest-subsequence', title: 'Longest Increasing Subsequence', difficulty: 'hard', description: 'Find LIS efficiently' }
+                    ]
+                },
+                {
+                    id: 'graphs',
+                    title: 'Graph Algorithms',
+                    description: 'Master graph traversal, shortest paths, and graph properties.',
+                    items: [
+                        { id: 'bfs-dfs', title: 'BFS & DFS', difficulty: 'medium', description: 'Graph traversal fundamentals' },
+                        { id: 'dijkstra', title: 'Dijkstra Algorithm', difficulty: 'hard', description: 'Shortest path algorithm' }
+                    ]
+                }
+            ]
+        };
+
+        // State management
+        let progress = {};
+        let currentTopic = null;
+
+        // Load progress from localStorage
+        function loadProgress() {
+            try {
+                const saved = localStorage.getItem('dsa-progress');
+                if (saved) progress = JSON.parse(saved);
+            } catch (e) {
+                console.log('No saved progress');
+            }
+        }
+
+        // Save progress
+        function saveProgress() {
+            localStorage.setItem('dsa-progress', JSON.stringify(progress));
+        }
+
+        // Calculate topic progress
+        function getTopicProgress(topicId) {
+            const topic = data.topics.find(t => t.id === topicId);
+            if (!topic) return 0;
+            
+            const completed = topic.items.filter(item => progress[topicId + '-' + item.id]).length;
+            return Math.round((completed / topic.items.length) * 100);
+        }
+
+        // Render topics sidebar
+        function renderTopics() {
+            const topicsList = document.getElementById('topics-list');
+            topicsList.innerHTML = '';
+
+            data.topics.forEach(topic => {
+                const progressPct = getTopicProgress(topic.id);
+                
+                const topicEl = document.createElement('div');
+                topicEl.className = 'topic';
+                topicEl.innerHTML = `
+                    <div style="font-weight: bold; margin-bottom: 5px;">${topic.title}</div>
+                    <div style="font-size: 12px; color: #9fb0c3; margin-bottom: 8px;">${topic.description}</div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; font-size: 11px;">
+                        <span>${topic.items.length} problems</span>
+                        <span style="color: #62a0ff;">${progressPct}% complete</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: ${progressPct}%"></div>
+                    </div>
+                `;
+                
+                topicEl.onclick = () => showTopic(topic);
+                topicsList.appendChild(topicEl);
+            });
+        }
+
+        // Show topic content
+        function showTopic(topic) {
+            currentTopic = topic;
+            const main = document.getElementById('main');
+            
+            main.innerHTML = `
+                <h2 style="margin-top: 0; color: #62a0ff;">${topic.title}</h2>
+                <p style="color: #9fb0c3; margin-bottom: 25px;">${topic.description}</p>
+                <div id="items-list"></div>
+            `;
+
+            const itemsList = document.getElementById('items-list');
+            
+            topic.items.forEach(item => {
+                const isCompleted = progress[topic.id + '-' + item.id];
+                
+                const itemEl = document.createElement('div');
+                itemEl.className = 'item' + (isCompleted ? ' completed' : '');
+                itemEl.innerHTML = `
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                        <div style="flex: 1;">
+                            <div style="font-weight: bold; margin-bottom: 5px;">
+                                ${isCompleted ? '✅ ' : ''}${item.title}
+                            </div>
+                            <div style="font-size: 13px; color: #9fb0c3; margin-bottom: 8px;">
+                                ${item.description}
+                            </div>
+                        </div>
+                        <div>
+                            <span class="difficulty ${item.difficulty}">${item.difficulty.toUpperCase()}</span>
+                        </div>
+                    </div>
+                    <div style="text-align: right; margin-top: 10px;">
+                        <button style="
+                            background: ${isCompleted ? '#33d17a' : '#62a0ff'}; 
+                            color: ${isCompleted ? '#000' : '#fff'}; 
+                            border: none; 
+                            padding: 6px 12px; 
+                            border-radius: 4px; 
+                            cursor: pointer; 
+                            font-size: 12px;
+                        ">
+                            ${isCompleted ? 'Review' : 'Start Learning'}
+                        </button>
+                    </div>
+                `;
+                
+                itemEl.onclick = () => {
+                    // Mark as completed
+                    progress[topic.id + '-' + item.id] = true;
+                    saveProgress();
+                    
+                    // Re-render
+                    renderTopics();
+                    showTopic(topic);
+                    
+                    // Show success
+                    alert(`🎉 Great job! "${item.title}" marked as completed!`);
+                };
+                
+                itemsList.appendChild(itemEl);
+            });
+        }
+
+        // Initialize
+        function init() {
+            console.log('🚀 DSA Learner starting...');
+            
+            loadProgress();
+            renderTopics();
+            
+            // Show first topic by default
+            if (data.topics.length > 0) {
+                showTopic(data.topics[0]);
+            }
+            
+            console.log('✅ DSA Learner ready!');
+        }
+
+        // Start when page loads
+        init();
+    </script>
+</body>
+</html>

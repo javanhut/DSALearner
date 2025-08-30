@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Module Test</title>
+</head>
+<body>
+    <h1>Module Loading Test</h1>
+    <div id="status">Testing...</div>
+    <div id="result"></div>
+
+    <script type="module">
+        const statusEl = document.getElementById('status');
+        const resultEl = document.getElementById('result');
+        
+        statusEl.innerHTML = 'Starting module test...';
+        console.log('🔄 Starting module test...');
+        
+        try {
+            statusEl.innerHTML = 'Step 1: Loading content module...';
+            console.log('📚 Loading content module...');
+            
+            const contentModule = await import('./src/modules/content.js');
+            console.log('✅ Content module loaded:', contentModule);
+            
+            statusEl.innerHTML = 'Step 2: Accessing content...';
+            console.log('🔍 Accessing content object...');
+            
+            const content = contentModule.content;
+            console.log('📊 Content object:', content);
+            
+            if (!content) {
+                throw new Error('Content object is undefined');
+            }
+            
+            if (!content.topics) {
+                throw new Error('Content.topics is undefined');
+            }
+            
+            statusEl.innerHTML = 'Step 3: Success!';
+            resultEl.innerHTML = `
+                <h2>✅ Success!</h2>
+                <p><strong>Topics loaded:</strong> ${content.topics.length}</p>
+                <h3>Topics:</h3>
+                <ul>
+                    ${content.topics.map(t => `<li><strong>${t.title}</strong> - ${t.items.length} items</li>`).join('')}
+                </ul>
+            `;
+            
+            console.log('🎉 Module test completed successfully!');
+            
+        } catch (error) {
+            console.error('❌ Module test failed:', error);
+            statusEl.innerHTML = 'Step X: Failed!';
+            resultEl.innerHTML = `
+                <h2>❌ Error</h2>
+                <p><strong>Error:</strong> ${error.message}</p>
+                <p><strong>Stack:</strong></p>
+                <pre>${error.stack}</pre>
+            `;
+        }
+    </script>
+</body>
+</html>

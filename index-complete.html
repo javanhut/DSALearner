@@ -46,7 +46,7 @@
         const FULL_CONTENT = null; // Will be loaded below
         
         // Load the full content
-        fetch('./full-content.json')
+        fetch('./src/modules/full-content.json')
             .then(response => response.json())
             .then(fullContent => {
                 console.log('✅ Full content loaded:', fullContent.length, 'topics');

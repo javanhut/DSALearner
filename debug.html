@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>DSA Learner Debug</title>
+    <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+    <div class="app-header">
+        <div class="brand">DSA Learner Debug</div>
+    </div>
+
+    <div class="app">
+        <aside class="sidebar" id="sidebar">Loading...</aside>
+        <main class="main" id="main">Loading main content...</main>
+        <aside class="coach" id="coach">Loading coach...</aside>
+    </div>
+
+    <script type="module">
+        import { content } from './src/modules/content.js';
+        import { State } from './src/modules/state.js';
+        
+        console.log('Debug: Content loaded with topics:', content.topics.length);
+        
+        const sidebar = document.getElementById('sidebar');
+        const main = document.getElementById('main');
+        
+        // Simple test rendering
+        sidebar.innerHTML = '<h3>Topics (' + content.topics.length + ')</h3>';
+        content.topics.forEach(t => {
+            const div = document.createElement('div');
+            div.innerHTML = '<strong>' + t.title + '</strong> - ' + t.items.length + ' items';
+            sidebar.appendChild(div);
+        });
+        
+        main.innerHTML = '<h2>First Topic: ' + content.topics[0].title + '</h2><p>' + content.topics[0].summary + '</p>';
+    </script>
+</body>
+</html>

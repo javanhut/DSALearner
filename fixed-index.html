@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>DSA Learner — Fixed</title>
+    <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="app-header">
+      <div class="brand">DSA Learner</div>
+      <div class="header-actions">
+        <button id="startPathBtn" class="ghost">Start Path</button>
+        <button id="reviewQueueBtn" class="ghost">Review Queue</button>
+        <button id="labBtn" class="ghost" title="Open DSA Lab">Lab</button>
+        <button id="resetProgressBtn" class="danger ghost" title="Clear local progress">Reset</button>
+      </div>
+    </header>
+
+    <div class="app">
+      <aside class="sidebar" id="sidebar">
+        <div style="color: white; padding: 10px;">Loading sidebar...</div>
+      </aside>
+      <main class="main" id="main">
+        <div style="color: white; padding: 10px;">Loading main content...</div>
+      </main>
+      <aside class="coach" id="coach">
+        <div style="color: white; padding: 10px;">Loading coach...</div>
+      </aside>
+    </div>
+
+    <footer class="footer">
+      <div>Built for rapid, neuroscience-informed DSA mastery.</div>
+      <div><a href="#" id="aboutLink">About</a></div>
+    </footer>
+
+    <div id="modal" class="modal hidden" role="dialog" aria-modal="true">
+      <div class="modal-content">
+        <div class="modal-header">
+          <div id="modalTitle">Modal</div>
+          <button id="modalClose" class="ghost">×</button>
+        </div>
+        <div id="modalBody" class="modal-body"></div>
+      </div>
+    </div>
+
+    <script type="module">
+        console.log('Starting DSA Learner...');
+        
+        const sidebar = document.getElementById('sidebar');
+        const main = document.getElementById('main');
+        const coach = document.getElementById('coach');
+        
+        try {
+            // Import modules
+            console.log('Importing modules...');
+            const { content } = await import('./src/modules/content.js');
+            const { State } = await import('./src/modules/state.js');
+            
+            console.log('Modules loaded successfully');
+            console.log('Content topics:', content.topics.length);
+            
+            const state = State.load();
+            console.log('State loaded:', state);
+            
+            // Basic rendering
+            sidebar.innerHTML = '';
+            main.innerHTML = '';
+            coach.innerHTML = '';
+            
+            // Render sidebar
+            console.log('Rendering sidebar...');
+            const list = document.createElement('div');
+            list.className = 'list';
+            
+            content.topics.forEach((topic, index) => {
+                const box = document.createElement('div');
+                box.className = 'topic';
+                box.style.cursor = 'pointer';
+                box.style.margin = '10px 0';
+                box.style.padding = '10px';
+                box.style.border = '1px solid #333';
+                box.style.borderRadius = '5px';
+                
+                const progress = Math.round((state.progress[topic.id] ? 0.1 : 0) * 100);
+                box.innerHTML = \`
+                    <div><strong>\${topic.title}</strong></div>
+                    <div style="font-size: 12px; color: #999;">\${topic.summary}</div>
+                    <div style="font-size: 12px;">Items: \${topic.items.length} | Progress: \${progress}%</div>
+                \`;
+                
+                box.onclick = () => {
+                    console.log('Topic clicked:', topic.title);
+                    renderTopicContent(topic);
+                };
+                
+                list.appendChild(box);
+            });
+            
+            sidebar.appendChild(list);
+            
+            // Render first topic by default
+            if (content.topics.length > 0) {
+                renderTopicContent(content.topics[0]);
+            }
+            
+            // Simple coach content
+            coach.innerHTML = '<div class="section"><h3>AI Coach</h3><p>Ready to help! Select a topic to begin.</p></div>';
+            
+            function renderTopicContent(topic) {
+                console.log('Rendering topic:', topic.title);
+                main.innerHTML = '';
+                
+                const header = document.createElement('div');
+                header.className = 'section';
+                header.innerHTML = \`
+                    <h2>\${topic.title}</h2>
+                    <div class="muted">\${topic.summary}</div>
+                    <div>Items: <strong>\${topic.items.length}</strong></div>
+                \`;
+                main.appendChild(header);
+                
+                // Show items
+                const itemsGrid = document.createElement('div');
+                itemsGrid.style.display = 'grid';
+                itemsGrid.style.gap = '10px';
+                itemsGrid.style.marginTop = '20px';
+                
+                topic.items.forEach(item => {
+                    const itemBox = document.createElement('div');
+                    itemBox.className = 'section';
+                    itemBox.innerHTML = \`
+                        <h4>\${item.title}</h4>
+                        <div style="color: #999;">\${item.brief}</div>
+                        <div style="margin-top: 10px;">
+                            <span style="background: #333; padding: 2px 8px; border-radius: 3px; font-size: 12px;">\${item.difficulty || 'N/A'}</span>
+                        </div>
+                    \`;
+                    itemsGrid.appendChild(itemBox);
+                });
+                
+                main.appendChild(itemsGrid);
+            }
+            
+            console.log('DSA Learner loaded successfully!');
+            
+        } catch (error) {
+            console.error('Error loading DSA Learner:', error);
+            sidebar.innerHTML = '<div style="color: red; padding: 10px;">Error: ' + error.message + '</div>';
+            main.innerHTML = '<div style="color: red; padding: 10px;">Failed to load content. Check console.</div>';
+        }
+    </script>
+  </body>
+</html>

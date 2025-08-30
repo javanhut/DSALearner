@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>DSA Learner Test</title>
+</head>
+<body>
+    <div id="test"></div>
+    <script type="module">
+        import { content } from './src/modules/content.js';
+        console.log('Content loaded:', content);
+        document.getElementById('test').innerHTML = '<h1>Content Topics: ' + content.topics.length + '</h1><ul>' + 
+            content.topics.map(t => '<li>' + t.title + '</li>').join('') + '</ul>';
+    </script>
+</body>
+</html>
