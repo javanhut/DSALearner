@@ -1,0 +1,7 @@
+fastapi
+uvicorn
+openai>=1.40
+chromadb
+sentence-transformers
+pydantic
+

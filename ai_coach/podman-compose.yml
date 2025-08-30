@@ -1,0 +1,54 @@
+version: "3.9"
+
+services:
+  ollama:
+    image: ollama/ollama:latest
+    container_name: dsa_ollama
+    restart: unless-stopped
+    ports:
+      - "11434:11434"
+    environment:
+      - OLLAMA_KEEP_ALIVE=24h
+      - OLLAMA_ORIGINS=*
+    volumes:
+      - ollama:/root/.ollama
+
+  chroma:
+    image: chromadb/chroma:latest
+    container_name: dsa_chroma
+    restart: unless-stopped
+    ports:
+      - "8001:8000"
+    environment:
+      - CHROMA_SERVER_HOST=0.0.0.0
+      - CHROMA_SERVER_HTTP_PORT=8000
+    command: ["--host","0.0.0.0","--port","8000","--workers","1"]
+    volumes:
+      - chroma:/chroma
+
+  tutor-api:
+    build: ./tutor-api
+    container_name: dsa_tutor_api
+    restart: unless-stopped
+    depends_on:
+      - ollama
+      - chroma
+    env_file:
+      - .env
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data:/app/data:Z
+
+  cpp-runner:
+    build: ./cpp-runner
+    container_name: dsa_cpp_runner
+    restart: unless-stopped
+    ports:
+      - "5055:5055"
+    environment:
+      - PYTHONUNBUFFERED=1
+
+volumes:
+  ollama:
+  chroma:

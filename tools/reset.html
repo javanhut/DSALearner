@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>DSA Learner — Reset Progress</title>
+    <style>
+      body{font-family:system-ui,Segoe UI,Roboto,Arial,sans-serif;padding:24px;background:#0b0f14;color:#e6edf3}
+      .box{max-width:680px;margin:auto;border:1px solid #202736;border-radius:10px;padding:16px;background:#121823}
+      .ok{color:#33d17a}
+      .muted{color:#9fb0c3}
+      a{color:#62a0ff}
+    </style>
+  </head>
+  <body>
+    <div class="box">
+      <h1>Resetting Local Progress…</h1>
+      <div id="status" class="muted">Working</div>
+      <p>If this page does not redirect automatically, go back to <a href="/">home</a>.</p>
+    </div>
+    <script>
+      try{
+        localStorage.removeItem('dsa-learner-state-v1');
+        document.getElementById('status').innerHTML = '<span class="ok">Done.</span> Redirecting…';
+      }catch(e){
+        document.getElementById('status').textContent = 'Failed to access localStorage: ' + e;
+      }
+      setTimeout(()=>{ location.href = '/'; }, 600);
+    </script>
+  </body>
+  </html>
+
