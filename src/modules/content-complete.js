@@ -571,6 +571,352 @@ function makeBFSMazeGame() {
   });
 }
 
+function makeDFSMazeGame() {
+  return createProblem({
+    id: 'dfs-maze',
+    title: 'DFS Maze Explorer',
+    difficulty: 'medium',
+    brief: 'Watch DFS explore a maze using depth-first search.',
+    learn: {
+      intuition: 'DFS explores as deep as possible before backtracking.',
+      visual: 'See how DFS dives deep into paths and backtracks when stuck.',
+      pattern: 'Stack-based exploration for path finding and maze solving.'
+    },
+    game: {
+      type: 'dfs-maze'
+    }
+  });
+}
+
+// Graph Algorithms
+function makeDijkstra() {
+  return createProblem({
+    id: 'dijkstra',
+    title: "Dijkstra's Shortest Path",
+    difficulty: 'medium',
+    brief: 'Find shortest paths in weighted graphs using priority queue.',
+    hints: [
+      'Use min-heap to process nearest unvisited node.',
+      'Relax edges: if dist[u] + weight < dist[v], update.',
+      'Track parent pointers to reconstruct path.'
+    ],
+    learn: {
+      intuition: 'Greedily expand from source by shortest known distance.',
+      visual: 'Watch distance values update as algorithm explores.',
+      pattern: 'Priority queue + distance array + relaxation.',
+      template: `function dijkstra(graph, start) {
+  const dist = new Array(graph.length).fill(Infinity);
+  const visited = new Set();
+  const pq = new MinHeap();
+  
+  dist[start] = 0;
+  pq.push([0, start]);
+  
+  while (!pq.isEmpty()) {
+    const [d, u] = pq.pop();
+    if (visited.has(u)) continue;
+    visited.add(u);
+    
+    for (const [v, weight] of graph[u]) {
+      if (dist[u] + weight < dist[v]) {
+        dist[v] = dist[u] + weight;
+        pq.push([dist[v], v]);
+      }
+    }
+  }
+  return dist;
+}`
+    },
+    quiz: [
+      {
+        type: 'mc',
+        prompt: 'Why use priority queue in Dijkstra?',
+        choices: ['Process nearest node first', 'Random order', 'LIFO order', 'FIFO order'],
+        answer: 0,
+        explain: 'Greedy: always expand shortest distance node.'
+      }
+    ],
+    game: { type: 'dijkstra-graph' }
+  });
+}
+
+function makePrims() {
+  return createProblem({
+    id: 'prims',
+    title: "Prim's MST Algorithm",
+    difficulty: 'medium',
+    brief: 'Build minimum spanning tree by growing from a single vertex.',
+    hints: [
+      'Start from any vertex, mark as visited.',
+      'Add all edges from visited vertices to priority queue.',
+      'Pick minimum weight edge that connects to unvisited vertex.'
+    ],
+    learn: {
+      intuition: 'Grow MST one vertex at a time, always choosing minimum edge.',
+      visual: 'Watch tree grow from starting vertex.',
+      pattern: 'Priority queue of edges + visited set.',
+      template: `function prims(graph, n) {
+  const visited = new Set();
+  const pq = new MinHeap();
+  const mst = [];
+  let totalWeight = 0;
+  
+  visited.add(0);
+  for (const [v, weight] of graph[0]) {
+    pq.push([weight, 0, v]);
+  }
+  
+  while (!pq.isEmpty() && visited.size < n) {
+    const [weight, u, v] = pq.pop();
+    if (visited.has(v)) continue;
+    
+    visited.add(v);
+    mst.push([u, v, weight]);
+    totalWeight += weight;
+    
+    for (const [next, w] of graph[v]) {
+      if (!visited.has(next)) {
+        pq.push([w, v, next]);
+      }
+    }
+  }
+  return { mst, totalWeight };
+}`
+    },
+    quiz: [
+      {
+        type: 'mc',
+        prompt: "Prim's vs Kruskal's: which grows from single vertex?",
+        choices: ["Prim's", "Kruskal's", 'Both', 'Neither'],
+        answer: 0,
+        explain: "Prim's grows from start vertex, Kruskal's picks global min edges."
+      }
+    ],
+    game: { type: 'prims-mst' }
+  });
+}
+
+function makeKruskals() {
+  return createProblem({
+    id: 'kruskals',
+    title: "Kruskal's MST Algorithm",
+    difficulty: 'medium',
+    brief: 'Build MST by sorting edges and using Union-Find.',
+    hints: [
+      'Sort all edges by weight.',
+      'Use Union-Find to detect cycles.',
+      'Add edge if it connects different components.'
+    ],
+    learn: {
+      intuition: 'Pick minimum weight edges that don\'t create cycles.',
+      visual: 'Watch disconnected components merge into tree.',
+      pattern: 'Sort edges + Union-Find for cycle detection.',
+      template: `function kruskals(edges, n) {
+  edges.sort((a, b) => a[2] - b[2]);
+  const parent = Array(n).fill(0).map((_, i) => i);
+  const rank = Array(n).fill(0);
+  
+  function find(x) {
+    if (parent[x] !== x) parent[x] = find(parent[x]);
+    return parent[x];
+  }
+  
+  function union(x, y) {
+    const px = find(x), py = find(y);
+    if (px === py) return false;
+    if (rank[px] < rank[py]) [px, py] = [py, px];
+    parent[py] = px;
+    if (rank[px] === rank[py]) rank[px]++;
+    return true;
+  }
+  
+  const mst = [];
+  let totalWeight = 0;
+  
+  for (const [u, v, weight] of edges) {
+    if (union(u, v)) {
+      mst.push([u, v, weight]);
+      totalWeight += weight;
+      if (mst.length === n - 1) break;
+    }
+  }
+  return { mst, totalWeight };
+}`
+    },
+    quiz: [
+      {
+        type: 'mc',
+        prompt: 'Time complexity of Kruskal\'s?',
+        choices: ['O(E log E)', 'O(V²)', 'O(E + V)', 'O(V³)'],
+        answer: 0,
+        explain: 'Dominated by edge sorting: O(E log E).'
+      }
+    ],
+    game: { type: 'kruskals-mst' }
+  });
+}
+
+function makeTopologicalSort() {
+  return createProblem({
+    id: 'topological-sort',
+    title: 'Topological Sort',
+    difficulty: 'medium',
+    brief: 'Order vertices in DAG so edges point forward.',
+    hints: [
+      'Use DFS and add to result in reverse post-order.',
+      'Or use Kahn\'s: process vertices with indegree 0.',
+      'Detect cycles if not all vertices processed.'
+    ],
+    learn: {
+      intuition: 'Linear ordering respecting dependencies.',
+      visual: 'Watch vertices get ordered by dependencies.',
+      pattern: 'DFS post-order or BFS with indegree.',
+      template: `function topSort(graph, n) {
+  const indegree = Array(n).fill(0);
+  for (let u = 0; u < n; u++) {
+    for (const v of graph[u]) {
+      indegree[v]++;
+    }
+  }
+  
+  const queue = [];
+  for (let i = 0; i < n; i++) {
+    if (indegree[i] === 0) queue.push(i);
+  }
+  
+  const result = [];
+  while (queue.length > 0) {
+    const u = queue.shift();
+    result.push(u);
+    
+    for (const v of graph[u]) {
+      indegree[v]--;
+      if (indegree[v] === 0) queue.push(v);
+    }
+  }
+  
+  return result.length === n ? result : null; // null if cycle
+}`
+    },
+    quiz: [
+      {
+        type: 'mc',
+        prompt: 'Can we topologically sort a graph with cycles?',
+        choices: ['No', 'Yes', 'Sometimes', 'Only self-loops'],
+        answer: 0,
+        explain: 'Cycles create circular dependencies.'
+      }
+    ],
+    game: { type: 'topsort-dag' }
+  });
+}
+
+function makeBellmanFord() {
+  return createProblem({
+    id: 'bellman-ford',
+    title: 'Bellman-Ford Algorithm',
+    difficulty: 'medium-hard',
+    brief: 'Find shortest paths with negative edges, detect negative cycles.',
+    hints: [
+      'Relax all edges V-1 times.',
+      'Extra iteration detects negative cycles.',
+      'Works with negative weights unlike Dijkstra.'
+    ],
+    learn: {
+      intuition: 'Iteratively relax edges until convergence.',
+      visual: 'Watch distances converge over iterations.',
+      pattern: 'V-1 iterations of edge relaxation.',
+      template: `function bellmanFord(edges, n, start) {
+  const dist = Array(n).fill(Infinity);
+  dist[start] = 0;
+  
+  // Relax edges V-1 times
+  for (let i = 0; i < n - 1; i++) {
+    for (const [u, v, weight] of edges) {
+      if (dist[u] !== Infinity && dist[u] + weight < dist[v]) {
+        dist[v] = dist[u] + weight;
+      }
+    }
+  }
+  
+  // Check for negative cycles
+  for (const [u, v, weight] of edges) {
+    if (dist[u] !== Infinity && dist[u] + weight < dist[v]) {
+      return null; // Negative cycle detected
+    }
+  }
+  
+  return dist;
+}`
+    },
+    quiz: [
+      {
+        type: 'mc',
+        prompt: 'Why V-1 iterations in Bellman-Ford?',
+        choices: ['Max path length is V-1 edges', 'Random choice', 'Efficiency', 'Tradition'],
+        answer: 0,
+        explain: 'Shortest path has at most V-1 edges in graph with V vertices.'
+      }
+    ],
+    game: { type: 'bellman-ford' }
+  });
+}
+
+function makeFloydWarshall() {
+  return createProblem({
+    id: 'floyd-warshall',
+    title: 'Floyd-Warshall Algorithm',
+    difficulty: 'medium-hard',
+    brief: 'Find all-pairs shortest paths using dynamic programming.',
+    hints: [
+      'DP state: dist[k][i][j] = shortest i→j using vertices 0..k.',
+      'For each k, try path through k: dist[i][k] + dist[k][j].',
+      'Space optimization: update in-place.'
+    ],
+    learn: {
+      intuition: 'Consider paths through intermediate vertices.',
+      visual: 'Watch distance matrix update for each intermediate vertex.',
+      pattern: '3 nested loops: intermediate, source, destination.',
+      template: `function floydWarshall(graph, n) {
+  const dist = Array(n).fill(null).map(() => 
+    Array(n).fill(Infinity)
+  );
+  
+  // Initialize distances
+  for (let i = 0; i < n; i++) {
+    dist[i][i] = 0;
+    for (const [j, weight] of graph[i]) {
+      dist[i][j] = weight;
+    }
+  }
+  
+  // Consider each vertex as intermediate
+  for (let k = 0; k < n; k++) {
+    for (let i = 0; i < n; i++) {
+      for (let j = 0; j < n; j++) {
+        if (dist[i][k] + dist[k][j] < dist[i][j]) {
+          dist[i][j] = dist[i][k] + dist[k][j];
+        }
+      }
+    }
+  }
+  
+  return dist;
+}`
+    },
+    quiz: [
+      {
+        type: 'mc',
+        prompt: 'Time complexity of Floyd-Warshall?',
+        choices: ['O(V³)', 'O(V²)', 'O(E log V)', 'O(VE)'],
+        answer: 0,
+        explain: 'Three nested loops over V vertices.'
+      }
+    ],
+    game: { type: 'floyd-warshall' }
+  });
+}
+
 // Export all content creators
 const contentCreators = {
   // Arrays & Two Pointers
@@ -587,6 +933,12 @@ const contentCreators = {
   // Graphs
   makeBFS,
   makeUnionFind,
+  makeDijkstra,
+  makePrims,
+  makeKruskals,
+  makeTopologicalSort,
+  makeBellmanFord,
+  makeFloydWarshall,
   
   // Trees
   makeValidateBST,
@@ -596,7 +948,8 @@ const contentCreators = {
   
   // Games
   makeBinarySearchGame,
-  makeBFSMazeGame
+  makeBFSMazeGame,
+  makeDFSMazeGame
 };
 
 // Build complete content structure
@@ -631,10 +984,16 @@ export const fullContent = {
     {
       id: 'graphs',
       title: 'Graphs',
-      summary: 'BFS, DFS, shortest paths, and connectivity.',
+      summary: 'BFS, DFS, shortest paths, MST, and advanced algorithms.',
       items: [
         makeBFS(),
-        makeUnionFind()
+        makeUnionFind(),
+        makeDijkstra(),
+        makePrims(),
+        makeKruskals(),
+        makeTopologicalSort(),
+        makeBellmanFord(),
+        makeFloydWarshall()
       ]
     },
     {
@@ -659,7 +1018,8 @@ export const fullContent = {
       summary: 'Learn through interactive visualizations.',
       items: [
         makeBinarySearchGame(),
-        makeBFSMazeGame()
+        makeBFSMazeGame(),
+        makeDFSMazeGame()
       ]
     }
   ]

@@ -796,7 +796,7 @@ function createTreeNodeHTML(node, visited, current, level, position, maxWidth) {
     if (isVisited) classes.push('visited');
     if (isCurrent) classes.push('current');
     
-    const x = 50 + (position - maxWidth/2) * 80;
+    const x = 280 + (position - maxWidth/2) * 80;  // Center at 280px (half of 600px container minus node width)
     const y = 50 + level * 80;
     
     let html = `<div class="${classes.join(' ')}" style="left: ${x}px; top: ${y}px;">
@@ -805,9 +805,9 @@ function createTreeNodeHTML(node, visited, current, level, position, maxWidth) {
     
     // Draw edges to children
     if (node.left) {
-        const childX = x - maxWidth * 20 / Math.pow(2, level + 1);
+        const childX = 280 + (position - maxWidth/Math.pow(2, level + 2) - maxWidth/2) * 80;
         const childY = y + 80;
-        html += `<svg class="viz-tree-edge" style="position: absolute; overflow: visible;">
+        html += `<svg class="viz-tree-edge" style="position: absolute; overflow: visible; width: 100%; height: 100%;">
             <line x1="${x + 20}" y1="${y + 40}" x2="${childX + 20}" y2="${childY}" 
                   stroke="${isVisited ? '#4caf50' : '#666'}" stroke-width="2"/>
         </svg>`;
@@ -815,9 +815,9 @@ function createTreeNodeHTML(node, visited, current, level, position, maxWidth) {
     }
     
     if (node.right) {
-        const childX = x + maxWidth * 20 / Math.pow(2, level + 1);
+        const childX = 280 + (position + maxWidth/Math.pow(2, level + 2) - maxWidth/2) * 80;
         const childY = y + 80;
-        html += `<svg class="viz-tree-edge" style="position: absolute; overflow: visible;">
+        html += `<svg class="viz-tree-edge" style="position: absolute; overflow: visible; width: 100%; height: 100%;">
             <line x1="${x + 20}" y1="${y + 40}" x2="${childX + 20}" y2="${childY}" 
                   stroke="${isVisited ? '#4caf50' : '#666'}" stroke-width="2"/>
         </svg>`;
