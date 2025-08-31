@@ -55,6 +55,9 @@ select{background:var(--panel);color:var(--text);border:1px solid var(--border);
 .modal-content{background:var(--elev);border:1px solid var(--border);border-radius:10px;width:min(860px,92vw);max-height:80vh;overflow:auto}
 .modal-header{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-bottom:1px solid var(--border)}
 .modal-body{padding:12px}
+.welcome{text-align:center;padding:40px 20px}
+.welcome h1{margin:0 0 16px;font-size:2.5em;color:var(--text)}
+.welcome p{margin:0 0 32px;color:var(--muted);font-size:1.1em}
 small.key{background:#0b1320;border:1px solid var(--border);padding:1px 6px;border-radius:6px;color:var(--muted)}
 
 /* Games: Binary Search board */

@@ -1,4 +1,5 @@
-import { content } from './modules/content.js';
+// Use globally loaded content instead of importing
+// import { content } from './modules/content.js';
 import { State } from './modules/state.js';
 import { pickNextForReview, nextByDifficulty } from './modules/scheduler.js';
 import { renderCoach } from './modules/coach.js';
@@ -7,6 +8,9 @@ import { renderQuiz } from './modules/quiz.js';
 import { renderLearn } from './modules/learn.js';
 import { renderGame } from './modules/games.js';
 import { renderLab } from './modules/lab.js';
+
+// Use the globally available content
+const content = window.fullContent;
 
 const sidebar = document.getElementById('sidebar');
 const main = document.getElementById('main');
@@ -167,9 +171,15 @@ function renderTopic(topicId){
   renderCoach(coach, state, topicId, null, content);
 }
 
-export function navigateTo(topicId, itemId, mode='learn'){
+function navigateTo(topicId, itemId, mode='learn'){
+  console.log('navigateTo called:', topicId, itemId, mode);
+  console.log('content available:', !!content);
+  console.log('content.topics available:', !!content?.topics);
+  
   const topic = content.topics.find(t=>t.id===topicId);
+  console.log('found topic:', !!topic);
   const item = topic.items.find(i=>i.id===itemId);
+  console.log('found item:', !!item);
   main.innerHTML = '';
 
   const tabs = document.createElement('div');
@@ -194,6 +204,14 @@ export function navigateTo(topicId, itemId, mode='learn'){
 }
 
 function initial(){
+  // Wait for content to be loaded
+  if (!content || !content.topics) {
+    console.log('Content not yet loaded, waiting...');
+    setTimeout(initial, 100);
+    return;
+  }
+  
+  console.log('Content loaded, rendering sidebar...');
   renderSidebar();
   // Default to first topic
   const t0 = content.topics[0];

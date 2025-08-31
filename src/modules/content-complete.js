@@ -1025,7 +1025,7 @@ export const fullContent = {
   ]
 };
 
-// Export for use in browser
+// Also export for browser global access
 if (typeof window !== 'undefined') {
   window.DSAContent = fullContent;
 }

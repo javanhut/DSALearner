@@ -56,8 +56,8 @@ export function renderCoach(node, state, topicId, itemId, content){
     // AI Coach (gpt-oss via local Tutor API)
     const ai = document.createElement('div');
     ai.className = 'section';
-    const topic = content.topics.find(t=>t.id===topicId);
-    const item = topic.items.find(i=>i.id===itemId);
+    const currentTopic = content.topics.find(t=>t.id===topicId);
+    const currentItem = currentTopic.items.find(i=>i.id===itemId);
     const defaultUrl = localStorage.getItem('aiCoachUrl') || 'http://localhost:8000/tutor/ask';
     ai.innerHTML = `
       <h3>AI Coach (gpt-oss)</h3>
@@ -66,7 +66,7 @@ export function renderCoach(node, state, topicId, itemId, content){
         <input id="aiCoachUrl" type="text" value="${defaultUrl}" placeholder="Tutor API endpoint (POST /tutor/ask)" />
         <button id="saveAiUrl" class="ghost">Save</button>
       </div>
-      <textarea id="aiQ" rows="4" class="code editor" placeholder="Ask about ${item.title}…"></textarea>
+      <textarea id="aiQ" rows="4" class="code editor" placeholder="Ask about ${currentItem.title}…"></textarea>
       <div class="row" style="gap:6px; margin-top:6px">
         <button id="askAi" class="btn">Ask Coach</button>
         <span id="aiStatus" class="muted"></span>

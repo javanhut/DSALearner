@@ -2,7 +2,7 @@ version: "3.9"
 
 services:
   ollama:
-    image: ollama/ollama:latest
+    image: docker.io/ollama/ollama:latest
     container_name: dsa_ollama
     restart: unless-stopped
     ports:
@@ -14,7 +14,7 @@ services:
       - ollama:/root/.ollama
 
   chroma:
-    image: chromadb/chroma:latest
+    image: docker.io/chromadb/chroma:latest
     container_name: dsa_chroma
     restart: unless-stopped
     ports:
@@ -44,7 +44,7 @@ services:
     container_name: dsa_cpp_runner
     restart: unless-stopped
     ports:
-      - "5055:5055"
+      - "5056:5055"
     environment:
       - PYTHONUNBUFFERED=1
 

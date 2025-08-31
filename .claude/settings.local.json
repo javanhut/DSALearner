@@ -1,0 +1,29 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ss:*)",
+      "Bash(podman ps:*)",
+      "Bash(podman rm:*)",
+      "Bash(make:*)",
+      "Bash(podman stop:*)",
+      "Bash(pkill:*)",
+      "Bash(podman network:*)",
+      "Bash(podman system reset:*)",
+      "Bash(grep:*)",
+      "Read(/tmp/**)",
+      "Read(/tmp/**)",
+      "Bash(curl:*)",
+      "Bash(podman logs:*)",
+      "Bash(podman restart:*)",
+      "Bash(podman-compose down:*)",
+      "Bash(podman-compose up:*)",
+      "Bash(podman-compose build:*)",
+      "Bash(podman kill:*)",
+      "Bash(uv pip install:*)",
+      "Bash(uv venv:*)",
+      "Bash(source:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
