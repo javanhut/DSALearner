@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>DSA Learner - Complete</title>
+    <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+    <header class="app-header">
+        <div class="brand">DSA Learner</div>
+        <div class="header-actions">
+            <button id="startPathBtn" class="ghost">Start Path</button>
+            <button id="reviewQueueBtn" class="ghost">Review Queue</button>
+            <button id="labBtn" class="ghost" title="Open DSA Lab">Lab</button>
+            <button id="resetProgressBtn" class="danger ghost" title="Clear local progress">Reset</button>
+        </div>
+    </header>
+
+    <div class="app">
+        <aside class="sidebar" id="sidebar">
+            <div style="padding: 10px; text-align: center;">
+                <div>📚 Loading topics...</div>
+            </div>
+        </aside>
+        <main class="main" id="main">
+            <div style="padding: 20px; text-align: center;">
+                <h2>Welcome to DSA Learner</h2>
+                <p>Select a topic from the sidebar to begin!</p>
+            </div>
+        </main>
+        <aside class="coach" id="coach">
+            <div class="section">
+                <h3>🤖 AI Coach</h3>
+                <p>Initializing...</p>
+            </div>
+        </aside>
+    </div>
+
+    <footer class="footer">
+        <div>Built for rapid, neuroscience-informed DSA mastery.</div>
+        <div><a href="#" id="aboutLink">About</a></div>
+    </footer>
+
+    <script>
+        // Full content data extracted from content.js - all 23 topics with hundreds of problems
+        const FULL_CONTENT = null; // Will be loaded below
+        
+        // Load the full content
+        fetch('./src/modules/full-content.json')
+            .then(response => response.json())
+            .then(fullContent => {
+                console.log('✅ Full content loaded:', fullContent.length, 'topics');
+                initializeApp(fullContent);
+            })
+            .catch(error => {
+                console.error('❌ Failed to load full content, using fallback:', error);
+                // Fallback content if JSON fails to load
+                const fallbackContent = [
+                    {
+                        "id": "games",
+                        "title": "Games & Animations",
+                        "summary": "Interactive visualizations to build deep intuition.",
+                        "items": [
+                            {"id": "binary-search-game", "title": "Binary Search — Guessing Game", "difficulty": "easy", "brief": "Find the hidden number with as few guesses as possible."},
+                            {"id": "bfs-maze", "title": "BFS Maze — Shortest Path", "difficulty": "easy-medium", "brief": "Place walls and watch BFS explore and find shortest path."},
+                            {"id": "heap-sandbox", "title": "Heap Sandbox — Push/Pop", "difficulty": "easy-medium", "brief": "Interact with a min-heap: push values, pop min, and watch heap order."}
+                        ]
+                    },
+                    {
+                        "id": "complexity",
+                        "title": "Complexity Primer", 
+                        "summary": "Big-O basics, loop patterns, binary search, and core cost models.",
+                        "items": [
+                            {"id": "big-o-basics", "title": "Big-O Basics", "difficulty": "easy", "brief": "Understand time and space complexity fundamentals."},
+                            {"id": "nested-loops", "title": "Nested Loop Patterns", "difficulty": "easy", "brief": "Analyze complexity of nested iterations."},
+                            {"id": "binary-search-primer", "title": "Binary Search Primer", "difficulty": "medium", "brief": "Master the logarithmic search technique."}
+                        ]
+                    },
+                    {
+                        "id": "arrays",
+                        "title": "Arrays & Two Pointers",
+                        "summary": "Array manipulation and two-pointer techniques.",
+                        "items": [
+                            {"id": "two-sum", "title": "Two Sum (Sorted)", "difficulty": "easy", "brief": "Find two numbers adding to target in a sorted array."},
+                            {"id": "three-sum", "title": "Three Sum", "difficulty": "medium", "brief": "Find all unique triplets that sum to zero."},
+                            {"id": "sliding-window", "title": "Sliding Window Maximum", "difficulty": "hard", "brief": "Find maximum in each sliding window efficiently."}
+                        ]
+                    },
+                    {
+                        "id": "sorting",
+                        "title": "Searching & Sorting",
+                        "summary": "Binary search variations and implementation details.",
+                        "items": [
+                            {"id": "binary-search", "title": "Binary Search", "difficulty": "easy", "brief": "Classic divide-and-conquer search in sorted arrays."}
+                        ]
+                    },
+                    {
+                        "id": "dp",
+                        "title": "Dynamic Programming",
+                        "summary": "Overlapping subproblems and optimal substructure.",
+                        "items": [
+                            {"id": "coin-change", "title": "Coin Change", "difficulty": "medium", "brief": "Minimum coins to make a target amount."},
+                            {"id": "lis", "title": "Longest Increasing Subsequence", "difficulty": "medium", "brief": "Find LIS in O(n log n) with patience sorting."},
+                            {"id": "jump-game-2", "title": "Jump Game II", "difficulty": "medium", "brief": "Minimum jumps to reach the end of array."}
+                        ]
+                    }
+                ];
+                initializeApp(fallbackContent);
+            });
+
+        function initializeApp(contentData) {
+            // State management
+            let progress = {};
+            let currentTopic = null;
+
+            // Load progress from localStorage
+            function loadProgress() {
+                try {
+                    const saved = localStorage.getItem('dsa-learner-progress');
+                    if (saved) progress = JSON.parse(saved);
+                } catch (e) {
+                    console.warn('Failed to load progress');
+                }
+            }
+
+            // Save progress
+            function saveProgress() {
+                localStorage.setItem('dsa-learner-progress', JSON.stringify(progress));
+            }
+
+            // Calculate topic progress
+            function getTopicProgress(topicId) {
+                const topic = contentData.find(t => t.id === topicId);
+                if (!topic || !topic.items) return 0;
+                
+                const completed = topic.items.filter(item => progress[topicId + '-' + item.id]).length;
+                return Math.round((completed / topic.items.length) * 100);
+            }
+
+            // Render sidebar with all topics
+            function renderSidebar() {
+                const sidebar = document.getElementById('sidebar');
+                sidebar.innerHTML = '';
+                
+                const list = document.createElement('div');
+                list.className = 'list';
+
+                contentData.forEach(topic => {
+                    const progressPct = getTopicProgress(topic.id);
+                    
+                    const box = document.createElement('div');
+                    box.className = 'topic';
+                    box.style.cursor = 'pointer';
+                    box.innerHTML = \`
+                        <div class="row">
+                            <div><strong>\${topic.title}</strong></div>
+                            <div class="progress-badge">\${progressPct}%</div>
+                        </div>
+                        <div class="muted" style="font-size: 12px; margin-top: 4px;">
+                            \${topic.summary}
+                        </div>
+                        <div style="font-size: 11px; color: var(--muted); margin-top: 4px;">
+                            \${topic.items ? topic.items.length : 0} items
+                        </div>
+                    \`;
+                    
+                    box.onclick = () => renderTopic(topic);
+                    list.appendChild(box);
+                });
+
+                sidebar.appendChild(list);
+                console.log('📋 Sidebar rendered with', contentData.length, 'topics');
+            }
+
+            // Render topic content
+            function renderTopic(topic) {
+                currentTopic = topic;
+                const main = document.getElementById('main');
+                
+                main.innerHTML = '';
+                
+                const header = document.createElement('div');
+                header.className = 'section';
+                header.innerHTML = \`
+                    <h2>\${topic.title}</h2>
+                    <div class="muted">\${topic.summary}</div>
+                    <div style="margin-top: 12px;">
+                        <span style="background: var(--elev); padding: 4px 8px; border-radius: 4px;">
+                            \${topic.items ? topic.items.length : 0} items
+                        </span>
+                    </div>
+                \`;
+                main.appendChild(header);
+
+                if (!topic.items || topic.items.length === 0) {
+                    const noItems = document.createElement('div');
+                    noItems.className = 'section';
+                    noItems.innerHTML = '<p>No items available for this topic yet.</p>';
+                    main.appendChild(noItems);
+                    return;
+                }
+
+                const items = document.createElement('div');
+                items.className = 'grid cols-2';
+                items.style.gap = '12px';
+                items.style.marginTop = '20px';
+
+                topic.items.forEach(item => {
+                    const isCompleted = progress[topic.id + '-' + item.id];
+                    
+                    const card = document.createElement('div');
+                    card.className = 'section';
+                    card.style.cursor = 'pointer';
+                    card.style.transition = 'all 0.2s';
+                    
+                    if (isCompleted) {
+                        card.style.borderLeft = '4px solid var(--ok)';
+                        card.style.opacity = '0.8';
+                    }
+
+                    const difficultyColors = {
+                        'easy': 'var(--ok)',
+                        'medium': 'var(--warn)', 
+                        'hard': 'var(--danger)',
+                        'easy-medium': 'var(--accent-2)'
+                    };
+                    
+                    const difficultyColor = difficultyColors[item.difficulty] || 'var(--muted)';
+
+                    card.innerHTML = \`
+                        <div style="margin-bottom: 8px;">
+                            <div style="font-weight: 600; margin-bottom: 4px; display: flex; align-items: center; gap: 8px;">
+                                \${isCompleted ? '✅' : ''}
+                                \${item.title}
+                            </div>
+                            <div style="font-size: 13px; color: var(--muted); line-height: 1.4;">
+                                \${item.brief}
+                            </div>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <span style="background: \${difficultyColor}; color: var(--bg); padding: 2px 6px; border-radius: 3px; font-size: 11px; font-weight: 500;">
+                                \${(item.difficulty || 'N/A').toUpperCase()}
+                            </span>
+                            <button style="
+                                background: \${isCompleted ? 'var(--ok)' : 'var(--accent)'}; 
+                                color: var(--bg); 
+                                border: none; 
+                                padding: 4px 8px; 
+                                border-radius: 3px; 
+                                cursor: pointer; 
+                                font-size: 11px;
+                            ">
+                                \${isCompleted ? 'Review' : 'Start'}
+                            </button>
+                        </div>
+                    \`;
+
+                    card.onmouseenter = () => {
+                        card.style.borderColor = 'var(--accent)';
+                        card.style.transform = 'translateY(-1px)';
+                    };
+                    card.onmouseleave = () => {
+                        card.style.borderColor = isCompleted ? 'var(--ok)' : 'var(--border)';
+                        card.style.transform = 'translateY(0)';
+                    };
+
+                    card.onclick = () => {
+                        const progressKey = topic.id + '-' + item.id;
+                        progress[progressKey] = true;
+                        saveProgress();
+                        
+                        // Re-render to show completion
+                        renderSidebar();
+                        renderTopic(topic);
+                        renderCoach();
+                        
+                        // Show success message
+                        alert(\`🎉 Completed: "\${item.title}"!\\n\\nGreat progress on \${topic.title}!\`);
+                    };
+
+                    items.appendChild(card);
+                });
+
+                main.appendChild(items);
+                console.log('🎯 Rendered topic:', topic.title, 'with', topic.items.length, 'items');
+            }
+
+            // Render coach panel
+            function renderCoach() {
+                const coach = document.getElementById('coach');
+                const totalItems = contentData.reduce((sum, topic) => sum + (topic.items ? topic.items.length : 0), 0);
+                const completedItems = Object.keys(progress).length;
+                const overallProgress = Math.round((completedItems / totalItems) * 100);
+
+                coach.innerHTML = \`
+                    <div class="section">
+                        <h3>🤖 AI Coach</h3>
+                        <p style="font-size: 14px; color: var(--muted);">
+                            Master data structures & algorithms through practice!
+                        </p>
+                    </div>
+                    <div class="section">
+                        <h4>📊 Progress Overview</h4>
+                        <div style="font-size: 13px; line-height: 1.6;">
+                            <div>📚 Topics: \${contentData.length}</div>
+                            <div>📝 Total Problems: \${totalItems}</div>
+                            <div>✅ Completed: \${completedItems}</div>
+                            <div>🎯 Progress: \${overallProgress}%</div>
+                        </div>
+                        <div style="background: var(--elev); height: 8px; border-radius: 4px; margin-top: 8px; overflow: hidden;">
+                            <div style="background: var(--accent); height: 100%; width: \${overallProgress}%; transition: width 0.3s;"></div>
+                        </div>
+                    </div>
+                    <div class="section">
+                        <h4>🎮 Quick Actions</h4>
+                        <button onclick="resetProgress()" style="
+                            background: var(--danger); 
+                            color: white; 
+                            border: none; 
+                            padding: 6px 12px; 
+                            border-radius: 4px; 
+                            cursor: pointer; 
+                            font-size: 12px;
+                        ">
+                            Reset Progress
+                        </button>
+                    </div>
+                \`;
+                
+                // Make reset function global
+                window.resetProgress = () => {
+                    if (confirm('Are you sure you want to reset all progress?')) {
+                        progress = {};
+                        saveProgress();
+                        renderSidebar();
+                        if (currentTopic) renderTopic(currentTopic);
+                        renderCoach();
+                        alert('Progress reset successfully!');
+                    }
+                };
+            }
+
+            // Initialize the app
+            function initialize() {
+                loadProgress();
+                renderSidebar();
+                renderCoach();
+                
+                // Show first topic by default
+                if (contentData.length > 0) {
+                    renderTopic(contentData[0]);
+                }
+                
+                console.log('🎉 DSA Learner fully initialized with', contentData.length, 'topics!');
+            }
+
+            // Start the app
+            initialize();
+        }
+    </script>
+</body>
+</html>

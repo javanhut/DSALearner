@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Simple JSON Test</title>
+</head>
+<body>
+    <h1>Simple JSON Loading Test</h1>
+    <div id="result">Loading...</div>
+    
+    <script>
+        console.log('Starting simple test...');
+        
+        fetch('./src/modules/full-content.json')
+            .then(response => {
+                console.log('Response:', response);
+                return response.json();
+            })
+            .then(data => {
+                console.log('Data loaded:', data);
+                document.getElementById('result').innerHTML = `
+                    <h2>✅ Success!</h2>
+                    <p>Loaded ${data.length} topics</p>
+                    <ul>
+                        ${data.map(t => `<li>${t.title} (${t.items ? t.items.length : 0} items)</li>`).join('')}
+                    </ul>
+                `;
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                document.getElementById('result').innerHTML = `
+                    <h2>❌ Error</h2>
+                    <p>${error.message}</p>
+                    <pre>${error.stack}</pre>
+                `;
+            });
+    </script>
+</body>
+</html>

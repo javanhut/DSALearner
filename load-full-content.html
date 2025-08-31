@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>DSA Learner — Full Implementation</title>
+    <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="styles.css" />
+    <style>
+        .implementation-card {
+            background: var(--elev);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 20px;
+            margin: 15px 0;
+        }
+        .code-block {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            padding: 15px;
+            margin: 10px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            overflow-x: auto;
+        }
+        .quiz-section {
+            background: rgba(100, 200, 100, 0.1);
+            padding: 15px;
+            border-radius: 6px;
+            margin: 10px 0;
+        }
+        .practice-section {
+            background: rgba(100, 100, 200, 0.1);
+            padding: 15px;
+            border-radius: 6px;
+            margin: 10px 0;
+        }
+        .learn-section {
+            background: rgba(200, 100, 100, 0.1);
+            padding: 15px;
+            border-radius: 6px;
+            margin: 10px 0;
+        }
+        .tab-buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        .tab-button {
+            padding: 8px 16px;
+            background: var(--border);
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .tab-button.active {
+            background: var(--accent);
+            color: var(--bg);
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <header class="app-header">
+        <div class="brand">DSA Learner — Full Content</div>
+        <div class="header-actions">
+            <button onclick="window.location.href='/'" class="ghost">← Back to Main</button>
+        </div>
+    </header>
+
+    <div class="app">
+        <aside class="sidebar" id="sidebar">
+            <div style="padding: 10px;">
+                <h3>Topics</h3>
+                <div id="topic-list"></div>
+            </div>
+        </aside>
+        
+        <main class="main" id="main">
+            <div style="padding: 20px;">
+                <h1>Full DSA Implementation Viewer</h1>
+                <p>This page shows the complete implementations that were in the original content.js file.</p>
+                
+                <div class="implementation-card">
+                    <h2>Example: Two Sum (Sorted Array)</h2>
+                    
+                    <div class="tab-buttons">
+                        <button class="tab-button active" onclick="showTab('learn', this)">Learn</button>
+                        <button class="tab-button" onclick="showTab('quiz', this)">Quiz</button>
+                        <button class="tab-button" onclick="showTab('practice', this)">Practice</button>
+                        <button class="tab-button" onclick="showTab('solution', this)">Solution</button>
+                    </div>
+                    
+                    <div id="learn" class="tab-content active">
+                        <div class="learn-section">
+                            <h3>📚 Learning Content</h3>
+                            <h4>Intuition</h4>
+                            <p>Use two pointers on the sorted array. The sum moves monotonically as you adjust pointers, enabling linear search.</p>
+                            
+                            <h4>Visual Explanation</h4>
+                            <p>Imagine a matrix of pair sums; valid pairs lie along anti-diagonals; the two-pointer walk traces a monotone path.</p>
+                            
+                            <h4>Pattern</h4>
+                            <p>Two pointers on sorted structure; shrinking window based on comparison to target.</p>
+                            
+                            <h4>Code Template</h4>
+                            <div class="code-block">
+function twoSumSorted(nums, target){
+  let i = 0, j = nums.length-1;
+  while(i < j){
+    const s = nums[i] + nums[j];
+    if(s === target) return [i, j];
+    if(s < target) i++;
+    else j--;
+  }
+  return [-1, -1];
+}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div id="quiz" class="tab-content">
+                        <div class="quiz-section">
+                            <h3>🎯 Quiz Questions</h3>
+                            
+                            <div style="margin: 15px 0;">
+                                <h4>Question 1: Time Complexity</h4>
+                                <p><strong>What is the time complexity of the two-pointer approach?</strong></p>
+                                <div style="margin-left: 20px;">
+                                    <label><input type="radio" name="q1"> O(n²)</label><br>
+                                    <label><input type="radio" name="q1"> O(log n)</label><br>
+                                    <label><input type="radio" name="q1"> O(n) ✓</label><br>
+                                    <label><input type="radio" name="q1"> O(n log n)</label><br>
+                                </div>
+                                <p style="color: var(--muted); margin-top: 10px;">
+                                    <em>Explanation: Each pointer moves at most n steps total ⇒ O(n).</em>
+                                </p>
+                            </div>
+                            
+                            <div style="margin: 15px 0;">
+                                <h4>Question 2: Key Concept</h4>
+                                <p><strong>What's the key correctness idea? (one word)</strong></p>
+                                <input type="text" placeholder="Your answer..." style="padding: 5px; width: 200px;">
+                                <p style="color: var(--muted); margin-top: 10px;">
+                                    <em>Answer: Monotonicity - Sum increases as left++ and decreases as right--, enabling elimination.</em>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div id="practice" class="tab-content">
+                        <div class="practice-section">
+                            <h3>💻 Practice Problem</h3>
+                            
+                            <h4>Starter Code</h4>
+                            <div class="code-block">
+// Return indices [i,j] such that nums[i]+nums[j]==target; nums is sorted
+function twoSumSorted(nums, target){
+  // TODO: implement two-pointer approach in O(n)
+}
+                            </div>
+                            
+                            <h4>Constraints</h4>
+                            <p>• n up to 10⁵<br>
+                            • Values within 32-bit range<br>
+                            • O(n) time, O(1) space required</p>
+                            
+                            <h4>Test Cases</h4>
+                            <div class="code-block">
+Test 1: twoSumSorted([2,7,11,15], 9) → [0,1]
+Test 2: twoSumSorted([1,2,3,4,6], 10) → [3,4]
+Test 3: twoSumSorted([1,3,3,4], 6) → [1,3]
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div id="solution" class="tab-content">
+                        <div class="practice-section">
+                            <h3>✅ Optimal Solution</h3>
+                            <div class="code-block">
+function twoSumSorted(nums, target){
+  let i=0, j=nums.length-1;
+  while(i<j){
+    const s = nums[i]+nums[j];
+    if(s===target) return [i,j];
+    if(s<target) i++; 
+    else j--;
+  }
+  return [-1,-1];
+}
+                            </div>
+                            
+                            <h4>Complexity Analysis</h4>
+                            <p>• Time: O(n) - Each pointer traverses at most n positions<br>
+                            • Space: O(1) - Only two pointers used</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="implementation-card">
+                    <h2>The Full Content Structure</h2>
+                    <p>The original content.js file contained:</p>
+                    <ul>
+                        <li><strong>52 complete problem implementations</strong></li>
+                        <li><strong>Learn sections</strong> with intuition, visual explanations, patterns, and templates</li>
+                        <li><strong>Quiz questions</strong> (multiple choice and short answer) with explanations</li>
+                        <li><strong>Practice problems</strong> with starter code, test cases, and optimal solutions</li>
+                        <li><strong>10 interactive games</strong> for visualization</li>
+                        <li><strong>23 topic categories</strong> covering all major DSA concepts</li>
+                    </ul>
+                    
+                    <p style="margin-top: 20px; padding: 15px; background: rgba(255,200,0,0.1); border-radius: 6px;">
+                        <strong>Note:</strong> The full content.js file was truncated during editing. To restore full functionality, 
+                        we would need to either recover from a backup or recreate all the function implementations. 
+                        The JSON file only contains basic metadata without the rich learning content.
+                    </p>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        function showTab(tabName, button) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Remove active class from all buttons
+            document.querySelectorAll('.tab-button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            // Show selected tab
+            document.getElementById(tabName).classList.add('active');
+            button.classList.add('active');
+        }
+        
+        // Sample content structure to show what was in the original
+        const sampleContent = {
+            'Arrays & Two Pointers': ['Two Sum', 'Sliding Window', '3Sum', 'Min Window'],
+            'Dynamic Programming': ['Coin Change', 'LIS', 'Edit Distance', 'Word Break'],
+            'Graphs': ['BFS', 'Dijkstra', 'Union-Find', 'Topological Sort'],
+            'Trees': ['BST Validation', 'Level Order', 'Fenwick Tree', 'Segment Tree']
+        };
+        
+        // Display topics in sidebar
+        const topicList = document.getElementById('topic-list');
+        Object.entries(sampleContent).forEach(([topic, items]) => {
+            const div = document.createElement('div');
+            div.style.cssText = 'margin: 10px 0; padding: 10px; background: var(--elev); border-radius: 4px;';
+            div.innerHTML = `
+                <strong>${topic}</strong>
+                <div style="font-size: 12px; color: var(--muted); margin-top: 5px;">
+                    ${items.join(', ')}
+                </div>
+            `;
+            topicList.appendChild(div);
+        });
+    </script>
+</body>
+</html>

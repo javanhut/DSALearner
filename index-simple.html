@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>DSA Learner — Mastery Trainer</title>
+    <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+    <header class="app-header">
+        <div class="brand">DSA Learner</div>
+        <div class="header-actions">
+            <button id="startPathBtn" class="ghost">Start Path</button>
+            <button id="reviewQueueBtn" class="ghost">Review Queue</button>
+            <button id="labBtn" class="ghost" title="Open DSA Lab">Lab</button>
+            <button id="resetProgressBtn" class="danger ghost" title="Clear local progress">Reset</button>
+        </div>
+    </header>
+
+    <div class="app">
+        <aside class="sidebar" id="sidebar">
+            <div style="padding: 10px; color: var(--text);">
+                <div id="sidebar-content">Loading topics...</div>
+            </div>
+        </aside>
+        <main class="main" id="main">
+            <div style="padding: 20px;">
+                <h2>Welcome to DSA Learner</h2>
+                <p>Select a topic from the sidebar to begin!</p>
+            </div>
+        </main>
+        <aside class="coach" id="coach">
+            <div style="padding: 10px; color: var(--text);">
+                <h3>AI Coach</h3>
+                <p>Initializing...</p>
+            </div>
+        </aside>
+    </div>
+
+    <footer class="footer">
+        <div>Built for rapid, neuroscience-informed DSA mastery.</div>
+        <div><a href="#" id="aboutLink">About</a></div>
+    </footer>
+
+    <script>
+        // Start initialization
+        console.log('Starting DSA Learner...');
+
+        fetch('./src/modules/full-content.json')
+            .then(response => {
+                console.log(`Loading content: ${response.status}`);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(fullContent => {
+                console.log(`✅ Content loaded: ${fullContent.length} topics`);
+                
+                // Display topics in sidebar
+                const sidebarContent = document.getElementById('sidebar-content');
+                sidebarContent.innerHTML = '<div class="list">';
+                
+                fullContent.forEach((topic, index) => {
+                    
+                    const topicDiv = document.createElement('div');
+                    topicDiv.className = 'topic';
+                    topicDiv.style.cssText = 'padding: 10px; margin: 5px 0; background: var(--elev); border-radius: 4px; cursor: pointer;';
+                    topicDiv.innerHTML = `
+                        <strong>${topic.title}</strong>
+                        <div style="font-size: 12px; color: var(--muted);">${topic.summary}</div>
+                        <div style="font-size: 11px; color: var(--text);">${topic.items ? topic.items.length : 0} items</div>
+                    `;
+                    
+                    topicDiv.onclick = () => {
+                        renderTopic(topic);
+                    };
+                    
+                    sidebarContent.appendChild(topicDiv);
+                });
+                
+                console.log('All topics rendered');
+                
+                // Update coach
+                const coach = document.getElementById('coach');
+                const totalItems = fullContent.reduce((sum, topic) => 
+                    sum + (topic.items ? topic.items.length : 0), 0);
+                
+                coach.innerHTML = `
+                    <div style="padding: 10px;">
+                        <h3>🤖 AI Coach</h3>
+                        <p style="font-size: 14px;">Ready to help you master DSA!</p>
+                        <div style="margin-top: 10px; font-size: 13px;">
+                            <div>📚 Topics: ${fullContent.length}</div>
+                            <div>📝 Total Items: ${totalItems}</div>
+                            <div>🎯 Progress: 0%</div>
+                        </div>
+                    </div>
+                `;
+                
+                console.log(`Coach initialized: ${fullContent.length} topics, ${totalItems} items`);
+            })
+            .catch(error => {
+                console.error(`❌ Failed to load content: ${error.message}`);
+                console.error(error);
+                
+                // Show error to user
+                document.getElementById('sidebar-content').innerHTML = `
+                    <div style="color: var(--danger); padding: 10px;">
+                        <strong>Error loading content!</strong>
+                        <p style="font-size: 12px;">${error.message}</p>
+                    </div>
+                `;
+            });
+
+        // Function to render a topic
+        function renderTopic(topic) {
+            const main = document.getElementById('main');
+            
+            // Create the container
+            const container = document.createElement('div');
+            container.style.padding = '20px';
+            
+            // Add title and summary
+            container.innerHTML = `
+                <h2>${topic.title}</h2>
+                <p>${topic.summary}</p>
+                <div id="items-container" style="margin-top: 20px; display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 15px;">
+                </div>
+            `;
+            
+            main.innerHTML = '';
+            main.appendChild(container);
+            
+            // Get the items container
+            const itemsContainer = document.getElementById('items-container');
+            
+            // Add each item as an interactive card
+            if (topic.items && topic.items.length > 0) {
+                topic.items.forEach(item => {
+                    const card = document.createElement('div');
+                    card.style.cssText = `
+                        padding: 15px;
+                        background: var(--elev);
+                        border-radius: 8px;
+                        border: 1px solid var(--border);
+                        cursor: pointer;
+                        transition: all 0.2s ease;
+                        position: relative;
+                    `;
+                    
+                    const difficultyColor = 
+                        item.difficulty === 'easy' ? 'var(--ok)' : 
+                        item.difficulty === 'medium' ? 'var(--warn)' : 
+                        item.difficulty === 'hard' ? 'var(--danger)' : 'var(--muted)';
+                    
+                    card.innerHTML = `
+                        <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 8px;">
+                            <strong style="flex: 1;">${item.title}</strong>
+                            <span style="padding: 2px 6px; background: ${difficultyColor}; color: var(--bg); border-radius: 3px; font-size: 11px; font-weight: 500;">
+                                ${item.difficulty || 'N/A'}
+                            </span>
+                        </div>
+                        <div style="font-size: 13px; color: var(--muted); line-height: 1.4; margin-bottom: 10px;">
+                            ${item.brief}
+                        </div>
+                        <button style="
+                            width: 100%;
+                            padding: 8px;
+                            background: var(--accent);
+                            color: var(--bg);
+                            border: none;
+                            border-radius: 4px;
+                            cursor: pointer;
+                            font-size: 13px;
+                            font-weight: 500;
+                            transition: opacity 0.2s;
+                        " onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'">
+                            Start Practice →
+                        </button>
+                    `;
+                    
+                    // Add hover effects
+                    card.onmouseenter = () => {
+                        card.style.borderColor = 'var(--accent)';
+                        card.style.transform = 'translateY(-2px)';
+                        card.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
+                    };
+                    
+                    card.onmouseleave = () => {
+                        card.style.borderColor = 'var(--border)';
+                        card.style.transform = 'translateY(0)';
+                        card.style.boxShadow = 'none';
+                    };
+                    
+                    // Add click handler
+                    card.onclick = () => {
+                        console.log(`Item clicked: ${item.title}`);
+                        // Show a modal or alert with item details
+                        showItemDetails(topic, item);
+                    };
+                    
+                    itemsContainer.appendChild(card);
+                });
+            } else {
+                itemsContainer.innerHTML = '<p>No items available for this topic.</p>';
+            }
+            
+            console.log(`Rendered topic: ${topic.title} with ${topic.items ? topic.items.length : 0} items`);
+        }
+        
+        // Function to show item details (modal-like)
+        function showItemDetails(topic, item) {
+            const modal = document.createElement('div');
+            modal.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: rgba(0,0,0,0.8);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                z-index: 1000;
+                animation: fadeIn 0.2s ease;
+            `;
+            
+            const content = document.createElement('div');
+            content.style.cssText = `
+                background: var(--elev);
+                border-radius: 12px;
+                padding: 30px;
+                max-width: 600px;
+                width: 90%;
+                max-height: 80vh;
+                overflow-y: auto;
+                position: relative;
+                animation: slideUp 0.3s ease;
+            `;
+            
+            const difficultyColor = 
+                item.difficulty === 'easy' ? 'var(--ok)' : 
+                item.difficulty === 'medium' ? 'var(--warn)' : 
+                item.difficulty === 'hard' ? 'var(--danger)' : 'var(--muted)';
+            
+            content.innerHTML = `
+                <button onclick="this.parentElement.parentElement.remove()" style="
+                    position: absolute;
+                    top: 15px;
+                    right: 15px;
+                    background: transparent;
+                    border: none;
+                    color: var(--text);
+                    font-size: 24px;
+                    cursor: pointer;
+                    padding: 5px;
+                ">✕</button>
+                
+                <h2 style="margin-top: 0;">${item.title}</h2>
+                <div style="margin-bottom: 20px;">
+                    <span style="padding: 4px 8px; background: ${difficultyColor}; color: var(--bg); border-radius: 4px; font-size: 12px; font-weight: 500;">
+                        ${item.difficulty || 'N/A'}
+                    </span>
+                    <span style="margin-left: 10px; color: var(--muted); font-size: 14px;">
+                        Topic: ${topic.title}
+                    </span>
+                </div>
+                
+                <div style="background: var(--bg); padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                    <h3 style="margin-top: 0; font-size: 16px;">Description</h3>
+                    <p style="margin: 0; color: var(--muted);">${item.brief}</p>
+                </div>
+                
+                <div style="background: var(--bg); padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                    <h3 style="margin-top: 0; font-size: 16px;">What You'll Learn</h3>
+                    <ul style="margin: 0; padding-left: 20px; color: var(--muted);">
+                        <li>Core concepts and patterns</li>
+                        <li>Time and space complexity analysis</li>
+                        <li>Common variations and edge cases</li>
+                        <li>Real-world applications</li>
+                    </ul>
+                </div>
+                
+                <div style="display: flex; gap: 10px; margin-top: 20px;">
+                    <button onclick="alert('Starting practice session for: ${item.title}\\n\\nThis feature will be implemented with the learning modules.')" style="
+                        flex: 1;
+                        padding: 12px;
+                        background: var(--accent);
+                        color: var(--bg);
+                        border: none;
+                        border-radius: 6px;
+                        cursor: pointer;
+                        font-size: 14px;
+                        font-weight: 600;
+                    ">Start Learning</button>
+                    
+                    <button onclick="this.parentElement.parentElement.parentElement.remove()" style="
+                        padding: 12px 24px;
+                        background: var(--border);
+                        color: var(--text);
+                        border: none;
+                        border-radius: 6px;
+                        cursor: pointer;
+                        font-size: 14px;
+                    ">Close</button>
+                </div>
+            `;
+            
+            modal.appendChild(content);
+            document.body.appendChild(modal);
+            
+            // Close on background click
+            modal.onclick = (e) => {
+                if (e.target === modal) {
+                    modal.remove();
+                }
+            };
+            
+            // Add CSS animations if not already present
+            if (!document.getElementById('modal-animations')) {
+                const style = document.createElement('style');
+                style.id = 'modal-animations';
+                style.textContent = `
+                    @keyframes fadeIn {
+                        from { opacity: 0; }
+                        to { opacity: 1; }
+                    }
+                    @keyframes slideUp {
+                        from { transform: translateY(20px); opacity: 0; }
+                        to { transform: translateY(0); opacity: 1; }
+                    }
+                `;
+                document.head.appendChild(style);
+            }
+        }
+
+
+    </script>
+</body>
+</html>

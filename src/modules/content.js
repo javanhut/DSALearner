@@ -214,12 +214,6 @@ export const content = {
       items:[ makeBigOBasics(), makeNestedLoops(), makeBinarySearchPrimer(), makeAmortizedDynamicArray(), makeMasterTheorem(), makeDSCostCheatsheet() ]
     },
     {
-      id:'complexity',
-      title:'Complexity Primer',
-      summary:'Big-O basics, loop patterns, binary search, and core cost models.',
-      items:[ makeBigOBasics(), makeNestedLoops(), makeBinarySearchPrimer(), makeAmortizedDynamicArray(), makeMasterTheorem(), makeDSCostCheatsheet() ]
-    },
-    {
       id:'arrays-pointers',
       title:'Arrays & Two Pointers',
       summary:'Classic scanning patterns: opposite ends, fast/slow, partitioning.',

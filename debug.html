@@ -1,40 +1,149 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>DSA Learner Debug</title>
-    <link rel="stylesheet" href="styles.css" />
+    <style>
+        body { font-family: monospace; padding: 20px; background: #1a1a1a; color: #fff; }
+        .success { color: #4ade80; }
+        .error { color: #f87171; }
+        .info { color: #60a5fa; }
+        pre { background: #262626; padding: 10px; border-radius: 4px; overflow-x: auto; }
+        h2 { border-bottom: 1px solid #444; padding-bottom: 10px; }
+    </style>
 </head>
 <body>
-    <div class="app-header">
-        <div class="brand">DSA Learner Debug</div>
-    </div>
-
-    <div class="app">
-        <aside class="sidebar" id="sidebar">Loading...</aside>
-        <main class="main" id="main">Loading main content...</main>
-        <aside class="coach" id="coach">Loading coach...</aside>
+    <h1>DSA Learner Module Debug</h1>
+    <div id="output">
+        <p class="info">Starting diagnostics...</p>
     </div>
 
     <script type="module">
-        import { content } from './src/modules/content.js';
-        import { State } from './src/modules/state.js';
+        const output = document.getElementById('output');
+        const log = (msg, type = 'info') => {
+            const p = document.createElement('p');
+            p.className = type;
+            p.textContent = msg;
+            output.appendChild(p);
+            console.log(msg);
+        };
+
+        const logPre = (msg, type = 'info') => {
+            const pre = document.createElement('pre');
+            pre.className = type;
+            pre.textContent = msg;
+            output.appendChild(pre);
+        };
+
+        // Test 1: Basic module syntax support
+        log('Test 1: Checking ES6 module support...');
+        try {
+            const testModule = await import('data:text/javascript,export const test = "works";');
+            if (testModule.test === 'works') {
+                log('✅ ES6 modules are supported', 'success');
+            }
+        } catch (e) {
+            log('❌ ES6 module support issue: ' + e.message, 'error');
+        }
+
+        // Test 2: Load content module
+        log('\nTest 2: Loading content.js module...');
+        try {
+            const contentModule = await import('./src/modules/content.js');
+            log('✅ content.js loaded', 'success');
+            
+            if (contentModule.content) {
+                log(`✅ content object found with ${contentModule.content.topics.length} topics`, 'success');
+                
+                // List topics
+                log('\nTopics found:');
+                contentModule.content.topics.forEach((topic, i) => {
+                    log(`  ${i+1}. ${topic.title} (${topic.items.length} items)`);
+                });
+            } else {
+                log('❌ content object not found in module', 'error');
+            }
+        } catch (e) {
+            log('❌ Failed to load content.js: ' + e.message, 'error');
+            logPre(e.stack, 'error');
+        }
+
+        // Test 3: Load state module
+        log('\nTest 3: Loading state.js module...');
+        try {
+            const stateModule = await import('./src/modules/state.js');
+            log('✅ state.js loaded', 'success');
+            
+            if (stateModule.State) {
+                log('✅ State object found', 'success');
+                
+                // Test State functions
+                const testState = stateModule.State.load();
+                log(`  State.load() returned: ${JSON.stringify(testState).substring(0, 100)}...`);
+            } else {
+                log('❌ State object not found in module', 'error');
+            }
+        } catch (e) {
+            log('❌ Failed to load state.js: ' + e.message, 'error');
+            logPre(e.stack, 'error');
+        }
+
+        // Test 4: Load scheduler module
+        log('\nTest 4: Loading scheduler.js module...');
+        try {
+            const schedulerModule = await import('./src/modules/scheduler.js');
+            log('✅ scheduler.js loaded', 'success');
+            
+            if (schedulerModule.pickNextForReview) {
+                log('✅ pickNextForReview function found', 'success');
+            } else {
+                log('❌ pickNextForReview not found in module', 'error');
+            }
+        } catch (e) {
+            log('❌ Failed to load scheduler.js: ' + e.message, 'error');
+            logPre(e.stack, 'error');
+        }
+
+        // Test 5: Check localStorage
+        log('\nTest 5: Checking localStorage...');
+        try {
+            localStorage.setItem('test', 'value');
+            const value = localStorage.getItem('test');
+            localStorage.removeItem('test');
+            if (value === 'value') {
+                log('✅ localStorage is working', 'success');
+            }
+        } catch (e) {
+            log('❌ localStorage issue: ' + e.message, 'error');
+        }
+
+        // Test 6: Check network
+        log('\nTest 6: Checking network/MIME types...');
+        try {
+            const response = await fetch('./src/modules/content.js');
+            const contentType = response.headers.get('content-type');
+            log(`  Content-Type for .js files: ${contentType}`);
+            
+            if (contentType && contentType.includes('javascript')) {
+                log('✅ JavaScript files served with correct MIME type', 'success');
+            } else {
+                log('⚠️ Unexpected MIME type, but modules still loaded', 'info');
+            }
+        } catch (e) {
+            log('❌ Network check failed: ' + e.message, 'error');
+        }
+
+        log('\n🏁 Diagnostics complete!', 'info');
         
-        console.log('Debug: Content loaded with topics:', content.topics.length);
-        
-        const sidebar = document.getElementById('sidebar');
-        const main = document.getElementById('main');
-        
-        // Simple test rendering
-        sidebar.innerHTML = '<h3>Topics (' + content.topics.length + ')</h3>';
-        content.topics.forEach(t => {
-            const div = document.createElement('div');
-            div.innerHTML = '<strong>' + t.title + '</strong> - ' + t.items.length + ' items';
-            sidebar.appendChild(div);
-        });
-        
-        main.innerHTML = '<h2>First Topic: ' + content.topics[0].title + '</h2><p>' + content.topics[0].summary + '</p>';
+        // Add action button
+        const btn = document.createElement('button');
+        btn.textContent = 'Go to Main App';
+        btn.style.marginTop = '20px';
+        btn.style.padding = '10px 20px';
+        btn.style.fontSize = '16px';
+        btn.onclick = () => window.location.href = '/';
+        output.appendChild(btn);
     </script>
 </body>
 </html>

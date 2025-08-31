@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Minimal Test</title>
+</head>
+<body>
+    <h1>Minimal Module Test</h1>
+    <div id="result">Testing...</div>
+    
+    <script type="module">
+        // First, let's test if inline modules work
+        document.getElementById('result').innerHTML = 'Inline module works!<br>';
+        
+        // Now test if we can import
+        try {
+            const module = await import('./src/modules/state.js');
+            document.getElementById('result').innerHTML += 'State module loaded!<br>';
+            document.getElementById('result').innerHTML += 'State object exists: ' + (module.State ? 'YES' : 'NO') + '<br>';
+        } catch(e) {
+            document.getElementById('result').innerHTML += 'ERROR: ' + e.message + '<br>';
+            console.error(e);
+        }
+        
+        // Test content module
+        try {
+            const module2 = await import('./src/modules/content.js');
+            document.getElementById('result').innerHTML += 'Content module loaded!<br>';
+            document.getElementById('result').innerHTML += 'Topics: ' + module2.content.topics.length + '<br>';
+        } catch(e) {
+            document.getElementById('result').innerHTML += 'ERROR loading content: ' + e.message + '<br>';
+            console.error(e);
+        }
+    </script>
+</body>
+</html>

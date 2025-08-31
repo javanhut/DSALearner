@@ -4,6 +4,7 @@ export function renderGame(main, state, topic, item){
   const type = item.game?.type;
   if(type === 'binary-search') return renderBinarySearchGame(main, state, topic, item);
   if(type === 'bfs-maze') return renderBFSMazeGame(main, state, topic, item);
+  if(type === 'dfs-maze') return renderDFSMazeGame(main, state, topic, item);
   if(type === 'heap-sandbox') return renderHeapSandboxGame(main, state, topic, item);
   if(type === 'sorting-race') return renderSortingRaceGame(main, state, topic, item);
   if(type === 'uf-playground') return renderUFGame(main, state, topic, item);
@@ -219,7 +220,393 @@ function renderBFSMazeGame(main, state, topic, item){
   };
 }
 
-function renderHeapSandboxGame(main, state, topic){
+function renderDFSMazeGame(main, state, topic, item){
+  const box = document.createElement('div');
+  box.className = 'section';
+  box.innerHTML = `<h2>${item.title} — Play</h2>
+    <div class="muted">Place walls, set start/end, then run DFS to watch the depth-first exploration and path discovery. Watch how DFS explores as deep as possible before backtracking!</div>`;
+
+  const ui = document.createElement('div');
+  ui.className = 'section';
+  ui.innerHTML = `
+    <div class="row" style="gap:8px;flex-wrap:wrap">
+      <button id="setStart" class="ghost">Set Start</button>
+      <button id="setEnd" class="ghost">Set End</button>
+      <button id="toggleWalls" class="ghost">Toggle Walls</button>
+      <button id="clearBtn" class="ghost">Clear</button>
+      <button id="genMaze" class="ghost">Generate Maze</button>
+      <button id="runBtn" class="btn">Run DFS</button>
+      <button id="stepBtn" class="btn secondary">Step DFS</button>
+      <span class="spacer"></span>
+      <span id="status" class="pill">Click to edit</span>
+    </div>
+    <div class="row" style="gap:12px;margin-top:8px">
+      <label style="font-size:12px">Speed</label>
+      <input id="speedSlider" type="range" min="1" max="100" value="50" style="width:100px"/>
+      <span id="speedLabel" class="pill" style="font-size:12px">50ms</span>
+      <span class="pill" style="font-size:12px">Stack: <span id="stackSize">0</span></span>
+      <span class="pill" style="font-size:12px">Visited: <span id="visitedCount">0</span></span>
+    </div>
+    <div id="maze" class="grid-board"></div>
+    <div class="row" style="gap:8px;margin-top:8px">
+      <div class="pill" style="background:var(--ok)">Start</div>
+      <div class="pill" style="background:var(--accent)">End</div>
+      <div class="pill" style="background:var(--info);opacity:0.6">Visited</div>
+      <div class="pill" style="background:var(--warning)">Path</div>
+      <div class="pill" style="background:var(--error)">Current</div>
+      <div class="pill" style="background:#9c27b0">Backtracking</div>
+    </div>
+  `;
+  box.appendChild(ui);
+  main.appendChild(box);
+
+  const rows = 15, cols = 25;
+  const maze = ui.querySelector('#maze');
+  const status = ui.querySelector('#status');
+  const setStartBtn = ui.querySelector('#setStart');
+  const setEndBtn = ui.querySelector('#setEnd');
+  const toggleWallsBtn = ui.querySelector('#toggleWalls');
+  const clearBtn = ui.querySelector('#clearBtn');
+  const genMazeBtn = ui.querySelector('#genMaze');
+  const runBtn = ui.querySelector('#runBtn');
+  const stepBtn = ui.querySelector('#stepBtn');
+  const speedSlider = ui.querySelector('#speedSlider');
+  const speedLabel = ui.querySelector('#speedLabel');
+  const stackSizeEl = ui.querySelector('#stackSize');
+  const visitedCountEl = ui.querySelector('#visitedCount');
+
+  maze.style.setProperty('--rows', rows);
+  maze.style.setProperty('--cols', cols);
+
+  let mode = 'wall';
+  let grid = Array.from({length:rows}, ()=> Array(cols).fill(0)); // 0 empty, 1 wall
+  let start = [0,0], end=[rows-1, cols-1];
+  let isRunning = false;
+  let isPaused = false;
+  let animationSpeed = 50;
+
+  speedSlider.oninput = () => {
+    animationSpeed = 101 - Number(speedSlider.value);
+    speedLabel.textContent = animationSpeed + 'ms';
+  };
+
+  function cellAt(r,c){ return maze.querySelector(`[data-r='${r}'][data-c='${c}']`); }
+
+  function draw(){
+    maze.innerHTML = '';
+    for(let r=0;r<rows;r++){
+      for(let c=0;c<cols;c++){
+        const d = document.createElement('div');
+        d.className = 'cell';
+        d.dataset.r = String(r); d.dataset.c = String(c);
+        if(grid[r][c]===1) d.classList.add('wall');
+        if(r===start[0] && c===start[1]) d.classList.add('start');
+        if(r===end[0] && c===end[1]) d.classList.add('end');
+        d.onclick = () => {
+          if(isRunning) return;
+          if(mode==='start'){ start=[r,c]; status.textContent='Set start'; draw(); }
+          else if(mode==='end'){ end=[r,c]; status.textContent='Set end'; draw(); }
+          else { grid[r][c] = grid[r][c]?0:1; d.classList.toggle('wall'); }
+        };
+        maze.appendChild(d);
+      }
+    }
+  }
+  draw();
+
+  setStartBtn.onclick = ()=> { mode='start'; status.textContent='Click a cell to set start'; };
+  setEndBtn.onclick = ()=> { mode='end'; status.textContent='Click a cell to set end'; };
+  toggleWallsBtn.onclick = ()=> { mode='wall'; status.textContent='Click to toggle walls'; };
+  clearBtn.onclick = ()=> { 
+    if(isRunning) return;
+    grid = grid.map(row=>row.map(()=>0)); 
+    draw(); 
+  };
+
+  // Generate a random maze using recursive backtracking
+  genMazeBtn.onclick = () => {
+    if(isRunning) return;
+    // Fill with walls
+    grid = Array.from({length:rows}, ()=> Array(cols).fill(1));
+    
+    // Recursive backtracking maze generation
+    const stack = [];
+    const visited = Array.from({length:rows}, ()=> Array(cols).fill(false));
+    
+    // Start from top-left
+    let current = [0, 0];
+    grid[0][0] = 0;
+    visited[0][0] = true;
+    stack.push(current);
+    
+    while(stack.length > 0) {
+      const [r, c] = current;
+      const neighbors = [];
+      
+      // Check all 4 directions (2 cells away for walls)
+      const dirs = [[0, 2], [2, 0], [0, -2], [-2, 0]];
+      for(const [dr, dc] of dirs) {
+        const nr = r + dr, nc = c + dc;
+        if(nr >= 0 && nr < rows && nc >= 0 && nc < cols && !visited[nr][nc]) {
+          neighbors.push([nr, nc, r + dr/2, c + dc/2]); // Include wall position
+        }
+      }
+      
+      if(neighbors.length > 0) {
+        // Choose random neighbor
+        const [nr, nc, wr, wc] = neighbors[Math.floor(Math.random() * neighbors.length)];
+        grid[nr][nc] = 0; // Clear destination
+        grid[wr][wc] = 0; // Clear wall between
+        visited[nr][nc] = true;
+        stack.push([nr, nc]);
+        current = [nr, nc];
+      } else {
+        // Backtrack
+        current = stack.pop();
+      }
+    }
+    
+    // Ensure start and end are clear
+    grid[start[0]][start[1]] = 0;
+    grid[end[0]][end[1]] = 0;
+    
+    draw();
+    status.textContent = 'Maze generated!';
+  };
+
+  // Step-by-step DFS
+  let dfsState = null;
+  
+  stepBtn.onclick = () => {
+    if(isRunning && !isPaused) return;
+    
+    if(!dfsState) {
+      // Initialize DFS state
+      dfsState = {
+        stack: [start],
+        visited: new Set([`${start[0]},${start[1]}`]),
+        parent: new Map(),
+        found: false,
+        path: []
+      };
+      dfsState.parent.set(`${start[0]},${start[1]}`, null);
+    }
+    
+    if(dfsState.stack.length === 0 || dfsState.found) {
+      status.textContent = dfsState.found ? 'Path found!' : 'No path exists';
+      return;
+    }
+    
+    // One step of DFS
+    const [r, c] = dfsState.stack.pop();
+    const node = cellAt(r, c);
+    
+    // Update visualization
+    stackSizeEl.textContent = dfsState.stack.length;
+    visitedCountEl.textContent = dfsState.visited.size;
+    
+    // Clear previous current markers
+    maze.querySelectorAll('.current, .backtrack').forEach(cell => {
+      cell.classList.remove('current', 'backtrack');
+    });
+    
+    // Mark current node
+    if(node && !(r===start[0]&&c===start[1]) && !(r===end[0]&&c===end[1])) {
+      node.classList.add('current');
+      node.classList.add('visited');
+    }
+    
+    // Check if we found the end
+    if(r === end[0] && c === end[1]) {
+      dfsState.found = true;
+      // Reconstruct path
+      let cur = `${end[0]},${end[1]}`;
+      const path = [];
+      while(cur) {
+        const [pr, pc] = cur.split(',').map(Number);
+        path.push([pr, pc]);
+        cur = dfsState.parent.get(cur);
+      }
+      path.reverse();
+      
+      // Highlight path
+      for(const [pr, pc] of path) {
+        const pnode = cellAt(pr, pc);
+        if(pnode && !(pr===start[0]&&pc===start[1]) && !(pr===end[0]&&pc===end[1])) {
+          pnode.classList.add('path');
+        }
+      }
+      status.textContent = `Path found! Length: ${path.length - 1}`;
+      return;
+    }
+    
+    // Explore neighbors in DFS order (reverse to match typical DFS)
+    const dirs = [[1,0], [0,1], [-1,0], [0,-1]]; // down, right, up, left
+    let hasUnvisited = false;
+    
+    for(let i = dirs.length - 1; i >= 0; i--) {
+      const [dr, dc] = dirs[i];
+      const nr = r + dr, nc = c + dc;
+      const key = `${nr},${nc}`;
+      
+      if(nr >= 0 && nr < rows && nc >= 0 && nc < cols && 
+         grid[nr][nc] === 0 && !dfsState.visited.has(key)) {
+        dfsState.stack.push([nr, nc]);
+        dfsState.visited.add(key);
+        dfsState.parent.set(key, `${r},${c}`);
+        hasUnvisited = true;
+        
+        // Mark as frontier
+        const nextNode = cellAt(nr, nc);
+        if(nextNode) {
+          nextNode.style.border = '2px solid var(--error)';
+        }
+      }
+    }
+    
+    // If no unvisited neighbors, we're backtracking
+    if(!hasUnvisited && node) {
+      node.classList.add('backtrack');
+    }
+    
+    status.textContent = `Exploring... Stack size: ${dfsState.stack.length}`;
+  };
+
+  runBtn.onclick = async () => {
+    if(isRunning) {
+      isPaused = !isPaused;
+      runBtn.textContent = isPaused ? 'Resume DFS' : 'Pause DFS';
+      return;
+    }
+    
+    isRunning = true;
+    isPaused = false;
+    runBtn.textContent = 'Pause DFS';
+    stepBtn.disabled = true;
+    mode='wall'; 
+    status.textContent='Running DFS…';
+    
+    // Clear previous visualization
+    maze.querySelectorAll('.visited, .path, .current, .backtrack').forEach(cell => {
+      cell.classList.remove('visited', 'path', 'current', 'backtrack');
+      cell.style.border = '';
+    });
+    
+    // DFS with animation
+    const stack = [[...start, [start]]]; // [row, col, path]
+    const visited = new Set([`${start[0]},${start[1]}`]);
+    const parent = new Map();
+    parent.set(`${start[0]},${start[1]}`, null);
+    const dirs = [[1,0],[-1,0],[0,1],[0,-1]];
+    let found = false;
+    let visitedCount = 0;
+    
+    while(stack.length > 0 && !found) {
+      if(isPaused) {
+        await new Promise(res => setTimeout(res, 100));
+        continue;
+      }
+      
+      const [r, c, currentPath] = stack.pop();
+      visitedCount++;
+      
+      // Update stats
+      stackSizeEl.textContent = stack.length;
+      visitedCountEl.textContent = visitedCount;
+      
+      // Clear previous current/backtrack markers
+      maze.querySelectorAll('.current, .backtrack').forEach(cell => {
+        cell.classList.remove('current', 'backtrack');
+      });
+      
+      const node = cellAt(r,c);
+      if(node && !(r===start[0]&&c===start[1]) && !(r===end[0]&&c===end[1])) {
+        node.classList.add('visited');
+        node.classList.add('current');
+      }
+      
+      if(r===end[0] && c===end[1]) {
+        found = true;
+        break;
+      }
+      
+      // Check all neighbors
+      let hasUnvisited = false;
+      for(let i = dirs.length - 1; i >= 0; i--) { // Reverse order for consistent DFS
+        const [dr,dc] = dirs[i];
+        const nr=r+dr, nc=c+dc;
+        const key = `${nr},${nc}`;
+        
+        if(nr>=0 && nr<rows && nc>=0 && nc<cols && grid[nr][nc]===0 && !visited.has(key)){
+          visited.add(key);
+          parent.set(key, `${r},${c}`);
+          stack.push([nr, nc, [...currentPath, [nr, nc]]]);
+          hasUnvisited = true;
+          
+          // Show frontier
+          const nextNode = cellAt(nr, nc);
+          if(nextNode && !(nr===end[0]&&nc===end[1])) {
+            nextNode.style.border = '2px solid var(--error)';
+          }
+        }
+      }
+      
+      // If no unvisited neighbors, mark as backtracking
+      if(!hasUnvisited && node) {
+        node.classList.remove('current');
+        node.classList.add('backtrack');
+      }
+      
+      // Animation delay
+      await new Promise(res=>setTimeout(res, animationSpeed));
+    }
+    
+    // Clear all current/backtrack markers
+    maze.querySelectorAll('.current, .backtrack').forEach(cell => {
+      cell.classList.remove('current', 'backtrack');
+    });
+    
+    // Clear borders
+    maze.querySelectorAll('.cell').forEach(cell => {
+      cell.style.border = '';
+    });
+    
+    // Reconstruct and highlight path
+    if(found){
+      let cur = `${end[0]},${end[1]}`;
+      const path=[];
+      while(cur){
+        const [r, c] = cur.split(',').map(Number);
+        path.push([r, c]);
+        cur = parent.get(cur);
+      }
+      path.reverse();
+      
+      // Animate path highlighting
+      for(const [r,c] of path){
+        const node = cellAt(r,c);
+        if(node && !(r===start[0]&&c===start[1]) && !(r===end[0]&&c===end[1])) {
+          node.classList.add('path');
+          await new Promise(res=>setTimeout(res, 20));
+        }
+      }
+      status.textContent = `Path found! Length: ${path.length - 1}, Cells explored: ${visitedCount}`;
+      const it = State.ensureItem(state, topic.id, item.id);
+      it.learnDone = true; 
+      State.save(state);
+    } else {
+      status.textContent = `No path exists. Cells explored: ${visitedCount}`;
+    }
+    
+    isRunning = false;
+    isPaused = false;
+    runBtn.textContent = 'Run DFS';
+    stepBtn.disabled = false;
+    dfsState = null;
+  };
+}
+
+function renderHeapSandboxGame(main, state, topic, item){
   const box = document.createElement('div'); box.className='section';
   box.innerHTML = `<h2>Heap Sandbox — Play</h2>
     <div class="row" style="gap:8px">
@@ -236,11 +623,11 @@ function renderHeapSandboxGame(main, state, topic){
   const dn=i=>{ for(;;){ let l=i*2+1,r=l+1,s=i; if(l<arr.length&&arr[l]<arr[s]) s=l; if(r<arr.length&&arr[r]<arr[s]) s=r; if(s===i) break; [arr[s],arr[i]]=[arr[i],arr[s]]; i=s; }};
   function draw(){ heapDiv.innerHTML=''; arr.forEach((v,i)=>{ const d=document.createElement('div'); d.className='bs-cell'; d.textContent = String(v); heapDiv.appendChild(d); }); info.textContent = `Size: ${arr.length}`; }
   box.querySelector('#push').onclick = ()=>{ const v=Number(box.querySelector('#val').value); if(Number.isFinite(v)){ arr.push(v); up(arr.length-1); draw(); } };
-  box.querySelector('#pop').onclick = ()=>{ if(!arr.length) return; arr[0]=arr.pop(); if(arr.length) dn(0); draw(); const it=State.ensureItem(state, topic.id, 'heap-sandbox'); it.learnDone=true; State.save(state); };
+  box.querySelector('#pop').onclick = ()=>{ if(!arr.length) return; arr[0]=arr.pop(); if(arr.length) dn(0); draw(); const it=State.ensureItem(state, topic.id, item.id); it.learnDone=true; State.save(state); };
   draw();
 }
 
-function renderSortingRaceGame(main, state, topic){
+function renderSortingRaceGame(main, state, topic, item){
   const box=document.createElement('div'); box.className='section';
   box.innerHTML = `<h2>Sorting Race — Play</h2>
     <div class="row" style="gap:8px;flex-wrap:wrap">
@@ -284,11 +671,11 @@ function renderSortingRaceGame(main, state, topic){
       for(let i=Math.floor(arr.length/2)-1;i>=0;i--){ down(i,arr.length); await sleep(delay); redraw(); }
       for(let end=arr.length-1; end>0; end--){ swap(0,end); await sleep(delay); down(0,end); await sleep(delay); redraw(); }
     }
-    const it=State.ensureItem(state, topic.id, 'sorting-race'); it.learnDone=true; State.save(state);
+    const it=State.ensureItem(state, topic.id, item.id); it.learnDone=true; State.save(state);
   };
 }
 
-function renderUFGame(main, state, topic){
+function renderUFGame(main, state, topic, item){
   const box=document.createElement('div'); box.className='section';
   box.innerHTML=`<h2>Union-Find Playground — Play</h2>
     <div class='row' style='gap:8px;flex-wrap:wrap'>
@@ -307,10 +694,10 @@ function renderUFGame(main, state, topic){
   function draw(){ view.innerHTML=''; for(let i=0;i<n;i++){ const d=document.createElement('div'); d.className='pill'; const root=f(i); d.textContent = `#${i} → ${root}`; view.appendChild(d);} box.querySelector('#cnt').textContent=`Components: ${count}`; }
   function init(){ n=Number(box.querySelector('#nodes').value)||10; p=Array(n).fill(0).map((_,i)=>i); r=Array(n).fill(0); count=n; draw(); }
   box.querySelector('#init').onclick=init; init();
-  box.querySelector('#union').onclick=()=>{ const a=Number(box.querySelector('#a').value), b=Number(box.querySelector('#b').value); if(a>=0&&a<n&&b>=0&&b<n){ if(u(a,b)) draw(); const it=State.ensureItem(state, topic.id, 'uf-playground'); it.learnDone=true; State.save(state);} };
+  box.querySelector('#union').onclick=()=>{ const a=Number(box.querySelector('#a').value), b=Number(box.querySelector('#b').value); if(a>=0&&a<n&&b>=0&&b<n){ if(u(a,b)) draw(); const it=State.ensureItem(state, topic.id, item.id); it.learnDone=true; State.save(state);} };
 }
 
-function renderDPGridGame(main, state, topic){
+function renderDPGridGame(main, state, topic, item){
   const box=document.createElement('div'); box.className='section';
   box.innerHTML=`<h2>DP Grid — Unique Paths</h2>
     <div class='row' style='gap:8px'><button id='clear' class='ghost'>Clear Obstacles</button><button id='step' class='btn'>Step Fill</button><button id='auto' class='btn secondary'>Auto Fill</button><span class='spacer'></span><span id='ans' class='pill'>—</span></div>
@@ -321,13 +708,13 @@ function renderDPGridGame(main, state, topic){
   function cell(r,c){ return board.querySelector(`[data-r='${r}'][data-c='${c}']`);}  
   function draw(){ board.innerHTML=''; for(let r=0;r<rows;r++) for(let c=0;c<cols;c++){ const d=document.createElement('div'); d.className='cell'; d.dataset.r=String(r); d.dataset.c=String(c); if(grid[r][c]) d.classList.add('wall'); d.onclick=()=>{ grid[r][c]=grid[r][c]?0:1; d.classList.toggle('wall');}; if(dp[r][c]){ d.textContent=String(dp[r][c]); d.style.fontSize='10px'; } board.appendChild(d);} }
   draw();
-  function recompute(step=false){ for(let r=0;r<rows;r++) for(let c=0;c<cols;c++) dp[r][c]=0; if(grid[0][0]===0) dp[0][0]=1; for(let r=0;r<rows;r++){ for(let c=0;c<cols;c++){ if(grid[r][c]) continue; if(r===0&&c===0) continue; const up=r>0?dp[r-1][c]:0, left=c>0?dp[r][c-1]:0; dp[r][c]=up+left; if(step){ const d=cell(r,c); if(d){ d.textContent=String(dp[r][c]); d.style.fontSize='10px'; } return; } } } const d=cell(rows-1,cols-1); if(d){ d.classList.add('path'); } box.querySelector('#ans').textContent = `Paths: ${dp[rows-1][cols-1]}`; const it=State.ensureItem(state, topic.id, 'dp-grid'); it.learnDone=true; State.save(state); }
+  function recompute(step=false){ for(let r=0;r<rows;r++) for(let c=0;c<cols;c++) dp[r][c]=0; if(grid[0][0]===0) dp[0][0]=1; for(let r=0;r<rows;r++){ for(let c=0;c<cols;c++){ if(grid[r][c]) continue; if(r===0&&c===0) continue; const up=r>0?dp[r-1][c]:0, left=c>0?dp[r][c-1]:0; dp[r][c]=up+left; if(step){ const d=cell(r,c); if(d){ d.textContent=String(dp[r][c]); d.style.fontSize='10px'; } return; } } } const d=cell(rows-1,cols-1); if(d){ d.classList.add('path'); } box.querySelector('#ans').textContent = `Paths: ${dp[rows-1][cols-1]}`; const it=State.ensureItem(state, topic.id, item.id); it.learnDone=true; State.save(state); }
   box.querySelector('#clear').onclick=()=>{ for(let r=0;r<rows;r++) for(let c=0;c<cols;c++) grid[r][c]=0; draw(); };
   box.querySelector('#step').onclick=()=>{ recompute(true); };
   box.querySelector('#auto').onclick=()=>{ recompute(false); draw(); };
 }
 
-function renderKMPExplorer(main, state, topic){
+function renderKMPExplorer(main, state, topic, item){
   const box=document.createElement('div'); box.className='section';
   box.innerHTML=`<h2>KMP Explorer — LPS & Matching</h2>
     <div class='row' style='gap:8px;flex-wrap:wrap'>
@@ -344,10 +731,10 @@ function renderKMPExplorer(main, state, topic){
   let lps=[]; let i=0, j=0; let built=false; let matches=[];
   function build(){ pat=box.querySelector('#pat').value; lps=Array(pat.length).fill(0); for(let ii=1;ii<pat.length;ii++){ let jj=lps[ii-1]; while(jj>0 && pat[ii]!==pat[jj]) jj=lps[jj-1]; if(pat[ii]===pat[jj]) jj++; lps[ii]=jj; } lpsDiv.textContent='LPS: ['+lps.join(', ')+']'; built=true; i=0; j=0; matches=[]; out.textContent='Built LPS'; }
   box.querySelector('#build').onclick=build; build();
-  box.querySelector('#step').onclick=()=>{ if(!built) build(); sText=box.querySelector('#text').value; if(i>=sText.length){ out.textContent='Done: ['+matches.join(', ')+']'; const it=State.ensureItem(state, topic.id, 'kmp-explorer'); it.learnDone=true; State.save(state); return; } if(sText[i]===pat[j]){ i++; j++; if(j===pat.length){ matches.push(i-j); j=lps[j-1]; } } else { if(j>0) j=lps[j-1]; else i++; } out.textContent=`i=${i}, j=${j}`; };
+  box.querySelector('#step').onclick=()=>{ if(!built) build(); sText=box.querySelector('#text').value; if(i>=sText.length){ out.textContent='Done: ['+matches.join(', ')+']'; const it=State.ensureItem(state, topic.id, item.id); it.learnDone=true; State.save(state); return; } if(sText[i]===pat[j]){ i++; j++; if(j===pat.length){ matches.push(i-j); j=lps[j-1]; } } else { if(j>0) j=lps[j-1]; else i++; } out.textContent=`i=${i}, j=${j}`; };
 }
 
-function renderAhoExplorer(main, state, topic){
+function renderAhoExplorer(main, state, topic, item){
   const box=document.createElement('div'); box.className='section';
   box.innerHTML=`<h2>Aho–Corasick Explorer</h2>
     <div class='row' style='gap:8px;flex-wrap:wrap'>
@@ -368,10 +755,10 @@ function renderAhoExplorer(main, state, topic){
     }
     stateId=0; i=0; matches=[]; built=true; out.textContent='Built'; dump.textContent = 'States: '+trie.length+' | Fail of each: ['+fail.join(', ')+']'; }
   box.querySelector('#build').onclick=build; build();
-  box.querySelector('#step').onclick=()=>{ if(!built) build(); if(i>=text.length){ out.textContent='Done matches at indexes: ['+matches.join(', ')+']'; const it=State.ensureItem(state, topic.id, 'aho-explorer'); it.learnDone=true; State.save(state); return; } const ch=text[i]; while(stateId && trie[stateId][ch]==null) stateId=fail[stateId]; if(trie[stateId][ch]!=null) stateId=trie[stateId][ch]; else stateId=0; if(outList[stateId].length){ matches.push(i); } i++; out.textContent=`i=${i}, state=${stateId}`; };
+  box.querySelector('#step').onclick=()=>{ if(!built) build(); if(i>=text.length){ out.textContent='Done matches at indexes: ['+matches.join(', ')+']'; const it=State.ensureItem(state, topic.id, item.id); it.learnDone=true; State.save(state); return; } const ch=text[i]; while(stateId && trie[stateId][ch]==null) stateId=fail[stateId]; if(trie[stateId][ch]!=null) stateId=trie[stateId][ch]; else stateId=0; if(outList[stateId].length){ matches.push(i); } i++; out.textContent=`i=${i}, state=${stateId}`; };
 }
 
-function renderDinicGame(main, state, topic){
+function renderDinicGame(main, state, topic, item){
   const box=document.createElement('div'); box.className='section';
   box.innerHTML=`<h2>Dinic Flow — Levels & Augment</h2>
     <div class='row' style='gap:8px;flex-wrap:wrap'>
@@ -390,10 +777,10 @@ function renderDinicGame(main, state, topic){
   function bfs(){ level=Array(n).fill(-1); const q=[s]; level[s]=0; for(let h=0; h<q.length; h++){ const u=q[h]; for(const e of g[u]) if(e.cap>0 && level[e.v]===-1){ level[e.v]=level[u]+1; q.push(e.v); } } levels.textContent='Levels: ['+level.join(', ')+']'; }
   function send(u,f){ if(u===t) return f; for(const e of g[u]) if(e.cap>0 && level[e.v]===level[u]+1){ const ret=send(e.v, Math.min(f,e.cap)); if(ret>0){ e.cap-=ret; g[e.v][e.rev].cap+=ret; return ret; } } return 0; }
   box.querySelector('#level').onclick=()=>bfs();
-  box.querySelector('#augment').onclick=()=>{ if(level.length===0||level[s]!==0) bfs(); let pushed=0, addf; do { addf=send(s,1e9); pushed+=addf; } while(addf>0); total+=pushed; flow.textContent='Flow: '+total; if(pushed===0){ const it=State.ensureItem(state, topic.id, 'dinic-flow'); it.learnDone=true; State.save(state);} };
+  box.querySelector('#augment').onclick=()=>{ if(level.length===0||level[s]!==0) bfs(); let pushed=0, addf; do { addf=send(s,1e9); pushed+=addf; } while(addf>0); total+=pushed; flow.textContent='Flow: '+total; if(pushed===0){ const it=State.ensureItem(state, topic.id, item.id); it.learnDone=true; State.save(state);} };
 }
 
-function renderHLDGame(main, state, topic){
+function renderHLDGame(main, state, topic, item){
   const box=document.createElement('div'); box.className='section';
   box.innerHTML=`<h2>HLD — Path Query Decomposition</h2>
     <div class='row' style='gap:8px;flex-wrap:wrap'>
@@ -412,6 +799,6 @@ function renderHLDGame(main, state, topic){
   function decompose(u,h){ head[u]=h; pos[u]=cur++; if(heavy[u]!==-1) decompose(heavy[u],h); for(const v of g[u]) if(v!==parent[u] && v!==heavy[u]) decompose(v,v); }
   function build(){ dfs(0,-1); decompose(0,0); box.querySelector('#out').textContent='Built. head='+head.join(', ')+' pos='+pos.join(', '); }
   function pathDecompose(a,b){ const segs=[]; while(head[a]!==head[b]){ if(depth[head[a]]<depth[head[b]]) [a,b]=[b,a]; segs.push([pos[head[a]], pos[a]]); a=parent[head[a]]; } if(depth[a]>depth[b]) [a,b]=[b,a]; segs.push([pos[a], pos[b]]); return segs; }
-  function query(){ const u=Number(box.querySelector('#u').value), v=Number(box.querySelector('#v').value); const segs=pathDecompose(u,v); const detail='Segments: '+segs.map(([l,r])=>`[${l},${r}]`).join(' + '); const sum=segs.reduce((acc,[l,r])=>acc + (r-l+1),0); box.querySelector('#out').textContent=detail+` | Sum (unit values): ${sum}`; const it=State.ensureItem(state, topic.id, 'hld-play'); it.learnDone=true; State.save(state); }
+  function query(){ const u=Number(box.querySelector('#u').value), v=Number(box.querySelector('#v').value); const segs=pathDecompose(u,v); const detail='Segments: '+segs.map(([l,r])=>`[${l},${r}]`).join(' + '); const sum=segs.reduce((acc,[l,r])=>acc + (r-l+1),0); box.querySelector('#out').textContent=detail+` | Sum (unit values): ${sum}`; const it=State.ensureItem(state, topic.id, item.id); it.learnDone=true; State.save(state); }
   box.querySelector('#build').onclick=build; box.querySelector('#query').onclick=query; build();
 }

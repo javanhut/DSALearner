@@ -30,7 +30,7 @@ run:
 	@python3 -m http.server $(PORT)
 
 run-dev:
-	@PORT=$(PORT) python3 tools/serve_nocache.py
+	@PORT=$(PORT) python3 tools/serve_module.py
 
 # ---------- All-in-one orchestration ----------
 # Starts the ai_coach stack (Ollama + Chroma + Tutor API + C++ runner) and the
@@ -109,7 +109,7 @@ PIDFILE := .server.pid
 
 up:
 	@echo "Starting server at $(URL) in background…"
-	@nohup python3 -m http.server $(PORT) >/dev/null 2>&1 & echo $$! > $(PIDFILE)
+	@nohup python3 tools/serve_module.py >/dev/null 2>&1 & echo $$! > $(PIDFILE)
 	@sleep 0.3
 	@echo "PID: $$(cat $(PIDFILE))"
 

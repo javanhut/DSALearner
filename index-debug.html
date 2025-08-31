@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>DSA Learner - Debug Version</title>
+    <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+    <header class="app-header">
+        <div class="brand">DSA Learner (Debug)</div>
+        <div class="header-actions">
+            <button id="startPathBtn" class="ghost">Start Path</button>
+            <button id="reviewQueueBtn" class="ghost">Review Queue</button>
+            <button id="labBtn" class="ghost" title="Open DSA Lab">Lab</button>
+            <button id="resetProgressBtn" class="danger ghost" title="Clear local progress">Reset</button>
+        </div>
+    </header>
+
+    <div class="app">
+        <aside class="sidebar" id="sidebar">
+            <div style="padding: 10px; color: var(--text);">
+                <div id="debug-status" style="background: #333; padding: 10px; margin-bottom: 10px; border-radius: 4px; font-size: 12px;">
+                    <div>Status: <span id="status">Initializing...</span></div>
+                </div>
+                <div id="sidebar-content">Loading topics...</div>
+            </div>
+        </aside>
+        <main class="main" id="main">
+            <div style="padding: 20px;">
+                <h2>Welcome to DSA Learner</h2>
+                <p>Select a topic from the sidebar to begin!</p>
+                <div id="debug-log" style="background: #1a1a1a; padding: 15px; margin-top: 20px; border-radius: 4px; font-family: monospace; font-size: 12px; max-height: 400px; overflow-y: auto;">
+                    <h3 style="margin-top: 0;">Debug Log:</h3>
+                    <div id="log-content"></div>
+                </div>
+            </div>
+        </main>
+        <aside class="coach" id="coach">
+            <div style="padding: 10px; color: var(--text);">
+                <h3>AI Coach</h3>
+                <p>Initializing...</p>
+            </div>
+        </aside>
+    </div>
+
+    <footer class="footer">
+        <div>Built for rapid, neuroscience-informed DSA mastery.</div>
+        <div><a href="#" id="aboutLink">About</a></div>
+    </footer>
+
+    <script>
+        // Debug logging function
+        const debugLog = (message, type = 'info') => {
+            const logContent = document.getElementById('log-content');
+            const time = new Date().toLocaleTimeString();
+            const color = type === 'error' ? '#ff6b6b' : type === 'success' ? '#51cf66' : '#74c0fc';
+            logContent.innerHTML += `<div style="color: ${color}; margin: 2px 0;">[${time}] ${message}</div>`;
+            console.log(`[${type}]`, message);
+        };
+
+        const updateStatus = (message) => {
+            document.getElementById('status').textContent = message;
+        };
+
+        // Start initialization
+        debugLog('Starting DSA Learner initialization...');
+        updateStatus('Starting...');
+
+        // Test 1: Check if fetch works
+        debugLog('Testing fetch API...');
+        fetch('./favicon.svg')
+            .then(response => {
+                debugLog(`Fetch test successful: ${response.status}`, 'success');
+                return response;
+            })
+            .catch(error => {
+                debugLog(`Fetch test failed: ${error.message}`, 'error');
+            });
+
+        // Test 2: Load the JSON content
+        debugLog('Attempting to load full-content.json...');
+        updateStatus('Loading content...');
+
+        fetch('./src/modules/full-content.json')
+            .then(response => {
+                debugLog(`JSON fetch response: ${response.status} ${response.statusText}`);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(fullContent => {
+                debugLog(`✅ Content loaded successfully: ${fullContent.length} topics`, 'success');
+                updateStatus('Content loaded!');
+                
+                // Display topics in sidebar
+                const sidebarContent = document.getElementById('sidebar-content');
+                sidebarContent.innerHTML = '<div class="list">';
+                
+                fullContent.forEach((topic, index) => {
+                    debugLog(`Loading topic ${index + 1}: ${topic.title} (${topic.items ? topic.items.length : 0} items)`);
+                    
+                    const topicDiv = document.createElement('div');
+                    topicDiv.className = 'topic';
+                    topicDiv.style.cssText = 'padding: 10px; margin: 5px 0; background: var(--elev); border-radius: 4px; cursor: pointer;';
+                    topicDiv.innerHTML = `
+                        <strong>${topic.title}</strong>
+                        <div style="font-size: 12px; color: var(--muted);">${topic.summary}</div>
+                        <div style="font-size: 11px; color: var(--text);">${topic.items ? topic.items.length : 0} items</div>
+                    `;
+                    
+                    topicDiv.onclick = () => {
+                        debugLog(`Topic clicked: ${topic.title}`);
+                        renderTopic(topic);
+                    };
+                    
+                    sidebarContent.appendChild(topicDiv);
+                });
+                
+                debugLog('All topics rendered in sidebar', 'success');
+                updateStatus('Ready!');
+                
+                // Update coach
+                const coach = document.getElementById('coach');
+                const totalItems = fullContent.reduce((sum, topic) => 
+                    sum + (topic.items ? topic.items.length : 0), 0);
+                
+                coach.innerHTML = `
+                    <div style="padding: 10px;">
+                        <h3>🤖 AI Coach</h3>
+                        <p style="font-size: 14px;">Ready to help you master DSA!</p>
+                        <div style="margin-top: 10px; font-size: 13px;">
+                            <div>📚 Topics: ${fullContent.length}</div>
+                            <div>📝 Total Items: ${totalItems}</div>
+                            <div>🎯 Progress: 0%</div>
+                        </div>
+                    </div>
+                `;
+                
+                debugLog(`Coach initialized: ${fullContent.length} topics, ${totalItems} items`, 'success');
+            })
+            .catch(error => {
+                debugLog(`❌ Failed to load content: ${error.message}`, 'error');
+                debugLog(`Error stack: ${error.stack}`, 'error');
+                updateStatus('Error loading content!');
+                
+                // Try to load with more debugging
+                fetch('./src/modules/full-content.json')
+                    .then(response => response.text())
+                    .then(text => {
+                        debugLog(`Raw response (first 200 chars): ${text.substring(0, 200)}`);
+                        try {
+                            const parsed = JSON.parse(text);
+                            debugLog(`Manually parsed: ${parsed.length} items`);
+                        } catch (e) {
+                            debugLog(`JSON parse error: ${e.message}`, 'error');
+                        }
+                    });
+            });
+
+        // Function to render a topic
+        function renderTopic(topic) {
+            const main = document.getElementById('main');
+            main.innerHTML = `
+                <div style="padding: 20px;">
+                    <h2>${topic.title}</h2>
+                    <p>${topic.summary}</p>
+                    <div style="margin-top: 20px;">
+                        ${topic.items ? topic.items.map(item => `
+                            <div style="padding: 15px; margin: 10px 0; background: var(--elev); border-radius: 4px;">
+                                <strong>${item.title}</strong>
+                                <span style="margin-left: 10px; padding: 2px 6px; background: ${
+                                    item.difficulty === 'easy' ? 'var(--ok)' : 
+                                    item.difficulty === 'medium' ? 'var(--warn)' : 'var(--danger)'
+                                }; color: var(--bg); border-radius: 3px; font-size: 11px;">
+                                    ${item.difficulty || 'N/A'}
+                                </span>
+                                <div style="margin-top: 5px; font-size: 13px; color: var(--muted);">
+                                    ${item.brief}
+                                </div>
+                            </div>
+                        `).join('') : '<p>No items available</p>'}
+                    </div>
+                </div>
+            `;
+            debugLog(`Rendered topic: ${topic.title} with ${topic.items ? topic.items.length : 0} items`);
+        }
+
+        // Add keyboard shortcut for debug info
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'd' && e.ctrlKey) {
+                const logDiv = document.getElementById('debug-log');
+                logDiv.style.display = logDiv.style.display === 'none' ? 'block' : 'none';
+            }
+        });
+
+        debugLog('Debug version ready. Press Ctrl+D to toggle debug log.');
+    </script>
+</body>
+</html>

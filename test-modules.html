@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Module Test</title>
+</head>
+<body>
+    <h1>ES6 Module Test</h1>
+    <div id="output">Loading modules...</div>
+    
+    <script type="module">
+        console.log('Starting module test...');
+        
+        try {
+            // Test importing the modules
+            const { content } = await import('./src/modules/content.js');
+            const { State } = await import('./src/modules/state.js');
+            const { pickNextForReview } = await import('./src/modules/scheduler.js');
+            
+            // Display results
+            const output = document.getElementById('output');
+            output.innerHTML = `
+                <h2>✅ Modules loaded successfully!</h2>
+                <ul>
+                    <li>Content: ${content.topics.length} topics loaded</li>
+                    <li>State module: ${State ? '✓ Loaded' : '✗ Failed'}</li>
+                    <li>Scheduler module: ${pickNextForReview ? '✓ Loaded' : '✗ Failed'}</li>
+                </ul>
+                <h3>Topics:</h3>
+                <ul>
+                    ${content.topics.map(t => `<li>${t.title} (${t.items.length} items)</li>`).join('')}
+                </ul>
+            `;
+            
+            console.log('✅ All modules loaded successfully!');
+            console.log('Topics:', content.topics);
+            
+        } catch (error) {
+            console.error('Module loading error:', error);
+            document.getElementById('output').innerHTML = `
+                <h2>❌ Error loading modules</h2>
+                <pre>${error.message}\n${error.stack}</pre>
+            `;
+        }
+    </script>
+</body>
+</html>
